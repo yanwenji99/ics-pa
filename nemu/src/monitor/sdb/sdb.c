@@ -18,6 +18,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "sdb.h"
+#include <memory/vaddr.h>
 
 static int is_batch_mode = false;
 
@@ -62,8 +63,17 @@ static int cmd_info(char *args) {
   }
   return 0;
 }
+
 static int cmd_x(char *args) {
-  
+  char *num = strtok(args, " ");
+  char *addr = strtok(NULL, " ");
+  int N = strtol(num, NULL, 10);
+  vaddr_t start_addr = strtol(addr, NULL, 16);
+  for (int i = 0; i < N; i++) 
+  {
+    uint32_t data=vaddr_read(start_addr + i*4, 4);
+    printf("0x%08x: 0x%08x\n", start_addr + i*4, data);
+  }
   return 0;
 }
 

@@ -62,6 +62,10 @@ static int cmd_info(char *args) {
   }
   return 0;
 }
+static int cmd_x(char *args) {
+  
+  return 0;
+}
 
 static int cmd_help(char *args);
 
@@ -74,6 +78,7 @@ static struct {
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
   { "info", "Display state information of the program", cmd_info },
+  { "x", "Scan memory", cmd_x },
   
   /* TODO: Add more commands */
 

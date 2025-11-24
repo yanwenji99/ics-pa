@@ -24,6 +24,19 @@ const char *regs[] = {
 };
 
 void isa_reg_display() {
+  int i = 0;
+  while (1)
+  {
+    if(regs[i]!=NULL)
+    {
+      printf("%-8s0x%08x  ", regs[i], cpu.gpr[i]);
+    }
+    else
+    {
+      break;
+    }
+    i++;
+  }
 }
 
 word_t isa_reg_str2val(const char *s, bool *success) {

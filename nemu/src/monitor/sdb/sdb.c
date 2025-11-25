@@ -80,7 +80,8 @@ static int cmd_x(char *args) {
 static int cmd_si(char *args) {
   int N = 1;
   if (args != NULL) {
-    N = strtol(args, NULL, 10);
+    char *num=strtok(args, " ");
+    N = strtol(num, NULL, 10);
   }
   cpu_exec(N);
   return 0;

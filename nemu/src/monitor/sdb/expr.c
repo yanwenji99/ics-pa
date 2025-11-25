@@ -100,6 +100,29 @@ static bool make_token(char *e) {
          */
 
         switch (rules[i].token_type) {
+          case TK_NOTYPE:
+            break;
+          case '+':
+            tokens[nr_token++].type = '+';
+            break;
+          case '-':
+            tokens[nr_token++].type = '-';
+            break;
+          case '*':
+            tokens[nr_token++].type = '*';
+            break;
+          case '/':
+            tokens[nr_token++].type = '/';
+            break;
+          case '(':
+            tokens[nr_token++].type = '(';
+            break;
+          case ')':
+            tokens[nr_token++].type = ')';
+            break;
+          case TK_EQ:
+            tokens[nr_token++].type = TK_EQ;
+            break;
           default: TODO();
         }
 

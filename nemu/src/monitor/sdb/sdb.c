@@ -77,6 +77,13 @@ static int cmd_x(char *args) {
   return 0;
 }
 
+static int cmd_si(char *args) {
+  char *num = strtok(args, " ");
+  int N = strtol(num, NULL, 10);
+  cpu_exec(N);
+  return 0;
+}
+
 static int cmd_help(char *args);
 
 static struct {
@@ -89,6 +96,7 @@ static struct {
   { "q", "Exit NEMU", cmd_q },
   { "info", "Display state information of the program", cmd_info },
   { "x", "Scan memory", cmd_x },
+  { "si", "Step into instruction", cmd_si },
   
   /* TODO: Add more commands */
 

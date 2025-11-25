@@ -44,6 +44,7 @@ static struct rule {
   {"/", '/'},           // divide
   {"\\(", '('},         // left parenthesis
   {"\\)", ')'},         // right parenthesis
+  {"[0-9]+", 'n'},      // number
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -123,8 +124,12 @@ static bool make_token(char *e) {
           case TK_EQ:
             tokens[nr_token++].type = TK_EQ;
             break;
-          default: TODO();
-        }
+          case 'n':
+            tokens[nr_token].type = 'n';
+            break;
+          default:
+            TODO();
+          }
 
         break;
       }

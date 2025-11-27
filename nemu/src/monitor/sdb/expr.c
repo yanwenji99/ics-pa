@@ -126,6 +126,9 @@ static bool make_token(char *e) {
             break;
           case 'n':
             tokens[nr_token].type = 'n';
+            strncpy(tokens[nr_token].str, substr_start, substr_len);
+            tokens[nr_token].str[substr_len] = '\0'; // 必须添加终止符
+            nr_token++;
             break;
           default:
             //TODO();

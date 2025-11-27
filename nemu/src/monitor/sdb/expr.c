@@ -214,7 +214,7 @@ static word_t eval(Token *tokens,int p,int q) {
   }
   else {
     int index=dominant_op(tokens,p,q);
-    word_t val1 = eval(tokens, p, index);
+    word_t val1 = eval(tokens, p, index-1);
     word_t val2 = eval(tokens, index + 1, q);
     switch (tokens[index].type) {
       case '+': return val1 + val2;

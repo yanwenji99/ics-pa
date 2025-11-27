@@ -207,7 +207,6 @@ static int dominant_op(Token *tokens,int start,int end) {
 
 static word_t eval(Token *tokens,int p,int q,bool *success) {
   if(p>q) {
-    printf("Bad expression\n");
     *success = false;
     return 0;
   }

@@ -92,7 +92,8 @@ static int cmd_p(char *args) {
   word_t result = expr(args, &success);
   if (success) {
     printf("%u\n", result);
-  } else {
+  } 
+  else {
     printf("Wrong expression\n");
   }
   return 0;

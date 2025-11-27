@@ -76,7 +76,8 @@ typedef struct token {
 static Token tokens[32] __attribute__((used)) = {};
 static int nr_token __attribute__((used))  = 0;
 
-static bool make_token(char *e) {
+static bool make_token(char *e)
+{
   int position = 0;
   int i;
   regmatch_t pmatch;
@@ -204,21 +205,22 @@ static int dominant_op(Token *tokens,int start,int end) {
   return index;
 }
 
-static word_t eval(Token *tokens,int p,int q) {
+static word_t eval(Token *tokens,int p,int q,bool *success) {
   if(p>q) {
     printf("Bad expression\n");
+    *success = false;
     return 0;
   }
   else if(p==q) {
     return atoi(tokens[p].str);
   }
   else if(check_parentheses(tokens,p,q)==true) {
-    return eval(tokens,p+1,q-1);
+    return eval(tokens,p+1,q-1,success);
   }
   else {
     int index=dominant_op(tokens,p,q);
-    word_t val1 = eval(tokens, p, index-1);
-    word_t val2 = eval(tokens, index + 1, q);
+    word_t val1 = eval(tokens, p, index-1, success);
+    word_t val2 = eval(tokens, index + 1, q, success);
     switch (tokens[index].type) {
       case '+': return val1 + val2;
       case '-': return val1 - val2;
@@ -239,7 +241,7 @@ word_t expr(char *e, bool *success) {
 
   /* TODO/eval: Insert codes to evaluate the expression. */
   int p=0,q=nr_token-1;
-  word_t result = eval(tokens, p, q);
+  word_t result = eval(tokens, p, q,success);
 
   return result;
 }

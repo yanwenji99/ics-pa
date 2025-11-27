@@ -128,7 +128,8 @@ static bool make_token(char *e) {
             tokens[nr_token].type = 'n';
             break;
           default:
-            TODO();
+            //TODO();
+            panic("Error: unrecognized token type");
           }
 
         break;
@@ -144,6 +145,104 @@ static bool make_token(char *e) {
   return true;
 }
 
+bool check_parentheses(Token *tokens, int start, int end)
+{
+  if (tokens[start].type != '(' || tokens[end].type != ')')
+  {
+    return false;
+  }
+
+  int cnt = 0;
+  for (int i = start; i <= end; i++)
+  {
+    if (tokens[i].type == '(')
+      cnt++;
+    else if (tokens[i].type == ')')
+      cnt--;
+
+    if (cnt == 0 && i != end)
+    {
+      return false;
+    }
+  }
+
+  return cnt == 0;
+}
+
+static int dominant_op(Token *tokens,int start,int end)
+{
+  int main[end - start + 1], index = -1, i;
+  for (i = start; i <= end; i++)
+    main[i-start]=1;
+  for(i=start;i<=end;i++)
+  {
+    if(tokens[i].type=='n')
+      main[i-start]=0;
+    else if(tokens[i].type=='(')
+    {
+      int cnt=1;  
+      for(int j=i+1;j<=end;j++)
+      {
+        if(tokens[j].type=='(')
+          cnt++;
+        else if(tokens[j].type==')')
+          cnt--;
+        if(cnt==0)
+        {
+          for(int k=i;k<=j;k++)
+            main[k-start]=0;
+          i=j;
+          break;
+        }
+      }
+    }
+  }
+  for(i=end;i>=start;i--)
+  {
+    if(main[i-start]==1&&(tokens[i].type=='+'||tokens[i].type=='-'))
+      index=i;
+  }
+  if(index==-1)
+  {
+    for(i=end;i>=start;i--)
+    {
+      if(main[i-start]==1&&(tokens[i].type=='*'||tokens[i].type=='/'))
+        index=i;
+    }
+  }
+  return index;
+}
+
+static word_t eval(Token *tokens,int p,int q) 
+{
+  if(p>q)
+  {
+    printf("Bad expression\n");
+    return 0;
+  }
+  else if(p==q)
+  {
+    return atoi(tokens[p].str);
+  }
+  else if(check_parentheses(tokens,p,q)==true)
+  {
+    return eval(tokens,p+1,q-1);
+  }
+  else
+  {
+    int index=dominant_op(tokens,p,q);
+    word_t val1 = eval(tokens, p, index);
+    word_t val2 = eval(tokens, index + 1, q);
+    switch (tokens[index].type) {
+      case '+': return val1 + val2;
+      case '-': return val1 - val2;
+      case '*': return val1 * val2;
+      case '/': return val1 / val2;
+      default: assert(0);
+    }
+    return 0;
+  }
+}
 
 word_t expr(char *e, bool *success) {
   if (!make_token(e)) {
@@ -151,8 +250,9 @@ word_t expr(char *e, bool *success) {
     return 0;
   }
 
-  /* TODO: Insert codes to evaluate the expression. */
-  TODO();
+  /* TODO/eval: Insert codes to evaluate the expression. */
+  int p=0,q=nr_token-1;
+  word_t result = eval(tokens, p, q);
 
-  return 0;
+  return result;
 }

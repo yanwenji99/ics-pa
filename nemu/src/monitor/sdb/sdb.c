@@ -87,6 +87,17 @@ static int cmd_si(char *args) {
   return 0;
 }
 
+static int cmd_p(char *args) {
+  bool success = true;
+  word_t result = expr(args, &success);
+  if (success) {
+    printf("%u\n", result);
+  } else {
+    printf("Wrong expression\n");
+  }
+  return 0;
+}
+
 static int cmd_help(char *args);
 
 static struct {
@@ -100,6 +111,7 @@ static struct {
   { "info", "Display state information of the program", cmd_info },
   { "x", "Scan memory", cmd_x },
   { "si", "Step into instruction", cmd_si },
+  { "p", "Evaluate expression", cmd_p },
   
   /* TODO: Add more commands */
 

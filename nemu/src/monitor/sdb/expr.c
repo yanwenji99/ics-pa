@@ -218,7 +218,7 @@ static word_t eval(Token *tokens,int p,int q)
   if(p>q)
   {
     printf("Bad expression\n");
-    return 0;
+    exit(1);
   }
   else if(p==q)
   {

@@ -69,6 +69,7 @@ static void gen_rand_expr() {
         num = rand()%100;
       }
       snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%d", num);
+      deep--;
       break;
     case 1:
       snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "( ");

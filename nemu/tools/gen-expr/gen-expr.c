@@ -30,12 +30,21 @@ static char *code_format =
 "  printf(\"%%u\", result); "
 "  return 0; "
 "}";
+int div = 0;
 
 static void gen_rand_expr() {
   int choose = rand()%3;
   switch(choose){
     case 0:
-      int num = rand();
+      int num;
+      if (div)
+      {
+        num = rand()%99+1;
+        div = 0;
+      }
+      else {
+        num = rand()%100;
+      }
       snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%d", num);
       break;
     case 1:
@@ -58,6 +67,7 @@ static void gen_rand_expr() {
           break;
         case 3:
           snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " / ");
+          div = 1;
           break;
       }
       gen_rand_expr();

@@ -21,7 +21,7 @@
 #include <regex.h>
 
 enum {
-  TK_NOTYPE = 256, TK_EQ,
+  TK_NOTYPE = 256, TK_EQ,TK_NEG,
 
   /* TODO: Add more token types */
 
@@ -108,7 +108,10 @@ static bool make_token(char *e)
             tokens[nr_token++].type = '+';
             break;
           case '-':
-            tokens[nr_token++].type = '-';
+            if(nr_token==0||(tokens[nr_token-1].type!='n'&&tokens[nr_token-1].type!=')'))
+              tokens[nr_token++].type = TK_NEG;
+            else
+              tokens[nr_token++].type = '-';
             break;
           case '*':
             tokens[nr_token++].type = '*';
@@ -174,7 +177,7 @@ static int dominant_op(Token *tokens,int start,int end) {
   for (i = start; i <= end; i++)
     main[i-start]=1;
   for(i=start;i<=end;i++) {
-    if(tokens[i].type=='n')
+    if(tokens[i].type=='n'||tokens[i].type==TK_NEG)
       main[i-start]=0;
     else if(tokens[i].type=='(') {
       int cnt=1;  
@@ -210,7 +213,11 @@ static word_t eval(Token *tokens,int p,int q,bool *success) {
     *success = false;
     return 0;
   }
-  else if(p==q) {
+  if(tokens[p].type==TK_NEG){
+    word_t val = eval(tokens, p + 1, q, success);
+    return -val;
+  }
+  else if(p==q) {  
     return atoi(tokens[p].str);
   }
   else if(check_parentheses(tokens,p,q)==true) {

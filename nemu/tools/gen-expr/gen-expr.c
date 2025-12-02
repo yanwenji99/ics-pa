@@ -32,7 +32,37 @@ static char *code_format =
 "}";
 
 static void gen_rand_expr() {
-  buf[0] = '\0';
+  int choose = rand()%3;
+  switch(choose){
+    case 0:
+      int num = rand();
+      snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%d", num);
+      break;
+    case 1:
+      snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "( ");
+      gen_rand_expr();
+      snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " )");
+      break;
+    case 2:
+      gen_rand_expr();
+      int op = rand()%4;
+      switch(op){
+        case 0:
+          snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " + ");
+          break;
+        case 1:   
+          snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " - ");
+          break;
+        case 2:
+          snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " * ");
+          break;
+        case 3:
+          snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " / ");
+          break;
+      }
+      gen_rand_expr();
+      break;
+  }
 }
 
 int main(int argc, char *argv[]) {
@@ -44,6 +74,7 @@ int main(int argc, char *argv[]) {
   }
   int i;
   for (i = 0; i < loop; i ++) {
+    buf[0] = '\0';
     gen_rand_expr();
 
     sprintf(code_buf, code_format, buf);

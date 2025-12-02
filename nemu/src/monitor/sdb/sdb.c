@@ -98,6 +98,33 @@ static int cmd_p(char *args) {
   }
   return 0;
 }
+static int cmd_fp(char *args) {
+  FILE *fp = fopen(args, "r");
+  if (fp == NULL) {
+    printf("Cannot open file '%s'\n", args);
+    return 0;
+  }
+  char buf[256];
+  while(fgets(buf, sizeof(buf), fp) != NULL) {
+    char *fresult = strtok(buf, " ");
+    char *expression = strtok(NULL, "\n");
+    bool success = true;
+    word_t result = expr(expression, &success);
+    if (success)
+    {
+      if(result==atoi(fresult))
+        printf("%u = %s\n", result,fresult);
+      else
+        printf("%u != %s\n", result,fresult);
+    }
+    else
+    {
+      printf("Wrong expression\n");
+    }
+  }
+  fclose(fp);
+  return 0;
+}
 
 static int cmd_help(char *args);
 
@@ -113,6 +140,7 @@ static struct {
   { "x", "Scan memory", cmd_x },
   { "si", "Step into instruction", cmd_si },
   { "p", "Evaluate expression", cmd_p },
+  { "fp"," Evaluate expression in file", cmd_fp },
   
   /* TODO: Add more commands */
 

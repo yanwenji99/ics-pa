@@ -30,17 +30,40 @@ static char *code_format =
 "  printf(\"%%u\", result); "
 "  return 0; "
 "}";
-int div = 0;
+static int div_zero = 0;
+static int deep = 0;
 
 static void gen_rand_expr() {
-  int choose = rand()%3;
+  deep++;
+  if(deep>10){
+    deep--;
+    int num;
+    if (div_zero)
+    {
+      num = rand()%99+1;
+      div_zero = 0;
+    }
+    else {
+      num = rand()%100;
+    }
+    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%d", num);
+    return;
+  }
+  int quanzhong = rand() % 10;
+  int choose;
+  if(quanzhong<2)
+    choose=0;
+  else if(quanzhong<6)
+    choose=1;
+  else
+    choose=2;
   switch(choose){
     case 0:
       int num;
-      if (div)
+      if (div_zero)
       {
         num = rand()%99+1;
-        div = 0;
+        div_zero = 0;
       }
       else {
         num = rand()%100;
@@ -50,6 +73,7 @@ static void gen_rand_expr() {
     case 1:
       snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "( ");
       gen_rand_expr();
+      deep--;
       snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " )");
       break;
     case 2:
@@ -67,10 +91,11 @@ static void gen_rand_expr() {
           break;
         case 3:
           snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " / ");
-          div = 1;
+          div_zero = 1;
           break;
       }
       gen_rand_expr();
+      deep--;
       break;
   }
 }

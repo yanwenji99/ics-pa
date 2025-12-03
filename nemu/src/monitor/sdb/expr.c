@@ -33,24 +33,24 @@ static struct rule {
   int token_type;
 } rules[] = {
 
-  /* TODO: Add more rules.
-   * Pay attention to the precedence level of different rules.
-   */
+    /* TODO: Add more rules.
+     * Pay attention to the precedence level of different rules.
+     */
 
-  {" +", TK_NOTYPE},    // spaces
-  {"\\+", '+'},         // plus
-  {"==", TK_EQ},        // equal
-  {"!=",TK_NEQ},        // not equal
-  {"-", '-'},          // minus or neg
-  {"\\*", '*'},         // multiply or dereference
-  {"/", '/'},           // divide
-  {"\\(", '('},         // left parenthesis
-  {"\\)", ')'},         // right parenthesis
-  {"[0-9]+", 'n'},      // number
-  {"0x[0-9a-fA-F]+",'h'},// 16
-  {"\\$\\$0",TK_REG},// register $0
-  {"\\$[a-zA-Z0-9]+",TK_REG},// register
-  {"&&",TK_AND},        // and
+    {" +", TK_NOTYPE},                     // spaces
+    {"==", TK_EQ},                         // equal
+    {"!=", TK_NEQ},                        // not equal
+    {"&&", TK_AND},                        // and
+    {"\\+", '+'},                          // plus
+    {"-", '-'},                            // minus or neg
+    {"\\*", '*'},                          // multiply or dereference
+    {"/", '/'},                            // divide
+    {"\\(", '('},                          // left parenthesis
+    {"\\)", ')'},                          // right parenthesis
+    {"\\$\\$0", TK_REG},                   // register $0
+    {"\\$[a-zA-Z0-9][a-zA-Z0-9]", TK_REG}, // register
+    {"0x[0-9a-fA-F]+", 'h'},               // 16
+    {"[0-9]+", 'n'},                       // number
 };
 
 #define NR_REGEX ARRLEN(rules)

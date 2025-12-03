@@ -48,7 +48,7 @@ static struct rule {
     {"\\(", '('},                          // left parenthesis
     {"\\)", ')'},                          // right parenthesis
     {"\\$\\$0", TK_REG},                   // register $0
-    {"\\$[a-zA-Z0-9]+", TK_REG}, // register
+    {"\\$[a-zA-Z0-9]+", TK_REG},           // register
     {"0x[0-9a-fA-F]+", 'h'},               // 16
     {"[0-9]+", 'n'},                       // number
 };
@@ -144,25 +144,18 @@ static bool make_token(char *e)
             nr_token++;
             break;
           case 'h':
-            tokens[nr_token].type = 'n';
-            long num = strtol(substr_start, NULL, 16);
-            snprintf(tokens[nr_token].str, sizeof(tokens[nr_token].str), "%ld", num);
+            tokens[nr_token].type = 'h';
+            strncpy(tokens[nr_token].str, substr_start, substr_len);
+            tokens[nr_token].str[substr_len] = '\0'; // 必须添加终止符
             nr_token++;
             break;
           case TK_NEQ:
             tokens[nr_token++].type = TK_NEQ;
             break;
           case TK_REG:
-            tokens[nr_token].type = 'n';
-            bool success;
-            word_t reg_val = isa_reg_str2val(substr_start + 1, &success);
-            if(success){
-              snprintf(tokens[nr_token].str, sizeof(tokens[nr_token].str), "%u", reg_val);
-            }
-            else {
-              printf("Error: unknown register %s\n", substr_start);
-              return false;
-            }
+            tokens[nr_token].type = TK_REG;
+            strncpy(tokens[nr_token].str, substr_start, substr_len);
+            tokens[nr_token].str[substr_len] = '\0'; // 必须添加终止符
             nr_token++;
             break;
           case TK_AND:
@@ -211,7 +204,7 @@ static int dominant_op(Token *tokens,int start,int end) {
   for (i = start; i <= end; i++)
     main[i-start]=1;
   for(i=start;i<=end;i++) {
-    if(tokens[i].type=='n'||tokens[i].type==TK_NEG)
+    if(tokens[i].type=='n'||tokens[i].type==TK_NEG||tokens[i].type=='h'||tokens[i].type==TK_REG)
       main[i-start]=0;
     else if(tokens[i].type=='(') {
       int cnt=1;  
@@ -279,8 +272,21 @@ static word_t eval(Token *tokens,int p,int q,bool *success) {
     word_t val = eval(tokens, p + 1, q, success);
     return -val;
   }
-  else if(p==q) {  
+  if(p==q && tokens[p].type=='n') {
     return atoi(tokens[p].str);
+  }
+  else if(p==q && tokens[p].type=='h') {
+    return (word_t)strtol(tokens[p].str,NULL,16);
+  }
+  else if(p==q && tokens[p].type==TK_REG) {
+    bool reg_success=true;
+    word_t reg_val=isa_reg_str2val(tokens[p].str+1,&reg_success);
+    if(reg_success==false){
+      *success=false;
+      return 0;
+    }
+    else
+      return reg_val;
   }
   else if(check_parentheses(tokens,p,q)==true) {
     return eval(tokens,p+1,q-1,success);

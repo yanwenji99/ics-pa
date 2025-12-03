@@ -65,10 +65,11 @@ static int cmd_info(char *args) {
 }
 
 static int cmd_x(char *args) {
-  char *num = strtok(args, " ");
+  char *num_str = strtok(args, " ");
   char *addr = strtok(NULL, " ");
-  int N = strtol(num, NULL, 10);
-  vaddr_t start_addr = strtol(addr, NULL, 16);
+  int N = strtol(num_str, NULL, 10);
+  bool success = true;
+  word_t start_addr = expr(addr, &success);
   for (int i = 0; i < N; i++) 
   {
     uint32_t data=vaddr_read(start_addr + i*4, 4);

@@ -51,7 +51,7 @@ static void gen_rand_expr() {
   }
   int quanzhong = rand() % 10;
   int choose;
-  if(quanzhong<2)
+  if(quanzhong<3)
     choose=0;
   else if(quanzhong<6)
     choose=1;

@@ -27,11 +27,20 @@ void isa_reg_display() {
   int i = 0;
   for (i = 0; i < 32; i++)
   {
+    check_reg_idx(i);
     printf("%-8s%08x\n", reg_name(i), gpr(i));
   }
   return;
 }
 
 word_t isa_reg_str2val(const char *s, bool *success) {
+  int i;
+  for (i = 0; i < 32;i++){
+    if (strcmp(s, reg_name(i)) == 0) {
+      *success = true;
+      return gpr(i);
+    }
+  }
+  *success = false;
   return 0;
 }

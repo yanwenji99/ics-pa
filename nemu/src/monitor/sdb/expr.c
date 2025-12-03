@@ -21,7 +21,7 @@
 #include <regex.h>
 
 enum {
-  TK_NOTYPE = 256, TK_EQ,TK_NEG,
+  TK_NOTYPE = 256, TK_EQ,TK_NEG,TK_NEQ,TK_AND,TK_DERE,TK_REG
 
   /* TODO: Add more token types */
 
@@ -39,12 +39,17 @@ static struct rule {
   {" +", TK_NOTYPE},    // spaces
   {"\\+", '+'},         // plus
   {"==", TK_EQ},        // equal
-  {"-", '-'},          // minus
-  {"\\*", '*'},         // multiply
+  {"!=",TK_NEQ},        // not equal
+  {"-", '-'},          // minus or neg
+  {"\\*", '*'},         // multiply or dereference
   {"/", '/'},           // divide
   {"\\(", '('},         // left parenthesis
   {"\\)", ')'},         // right parenthesis
   {"[0-9]+", 'n'},      // number
+  {"0x[0-9a-fA-F]+",'h'},// 16
+  {"\\$\\$0",TK_REG},// register $0
+  {"\\$[a-zA-Z0-9]+",TK_REG},// register
+  {"&&",TK_AND},        // and
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -108,13 +113,16 @@ static bool make_token(char *e)
             tokens[nr_token++].type = '+';
             break;
           case '-':
-            if(nr_token==0||(tokens[nr_token-1].type!='n'&&tokens[nr_token-1].type!=')'))
+            if (nr_token == 0 || (tokens[nr_token - 1].type != 'n' && tokens[nr_token - 1].type != ')' && tokens[nr_token - 1].type != 'h'))
               tokens[nr_token++].type = TK_NEG;
             else
               tokens[nr_token++].type = '-';
             break;
           case '*':
-            tokens[nr_token++].type = '*';
+            if (nr_token == 0 || (tokens[nr_token - 1].type != 'n' && tokens[nr_token - 1].type != ')' && tokens[nr_token - 1].type != 'h'))
+              tokens[nr_token++].type = TK_DERE;
+            else
+              tokens[nr_token++].type = '*';
             break;
           case '/':
             tokens[nr_token++].type = '/';
@@ -133,6 +141,31 @@ static bool make_token(char *e)
             strncpy(tokens[nr_token].str, substr_start, substr_len);
             tokens[nr_token].str[substr_len] = '\0'; // 必须添加终止符
             nr_token++;
+            break;
+          case 'h':
+            tokens[nr_token].type = 'n';
+            long num = strtol(substr_start, NULL, 16);
+            snprintf(tokens[nr_token].str, sizeof(tokens[nr_token].str), "%ld", num);
+            nr_token++;
+            break;
+          case TK_NEQ:
+            tokens[nr_token++].type = TK_NEQ;
+            break;
+          case TK_REG:
+            tokens[nr_token].type = 'n';
+            bool success;
+            word_t reg_val = isa_reg_str2val(substr_start + 1, &success);
+            if(success){
+              snprintf(tokens[nr_token].str, sizeof(tokens[nr_token].str), "%u", reg_val);
+            }
+            else {
+              printf("Error: unknown register %s\n", substr_start);
+              return false;
+            }
+            nr_token++;
+            break;
+          case TK_AND:
+            tokens[nr_token++].type = TK_AND;
             break;
           default:
             //TODO();
@@ -195,14 +228,38 @@ static int dominant_op(Token *tokens,int start,int end) {
       }
     }
   }
-  for(i=end;i>=start;i--) {
-    if(main[i-start]==1&&(tokens[i].type=='+'||tokens[i].type=='-'))
-      index=i;
+  for (i = end; i >= start;i--){
+    if(main[i - start] == 1 && tokens[i].type == TK_AND)
+      index = i;
   }
-  if(index==-1) {
-    for(i=end;i>=start;i--) {
-      if(main[i-start]==1&&(tokens[i].type=='*'||tokens[i].type=='/'))
-        index=i;
+  if(index==-1){
+    for (i = end; i >= start; i--)
+    {
+      if (main[i - start] == 1 && (tokens[i].type == TK_EQ || tokens[i].type == TK_NEQ))
+        index = i;
+    }
+  }
+  if(index ==-1){
+    for (i = end; i >= start; i--)
+    {
+      if (main[i - start] == 1 && (tokens[i].type == '+' || tokens[i].type == '-'))
+        index = i;
+    }
+  }
+  if (index == -1)
+  {
+    for (i = end; i >= start; i--)
+    {
+      if (main[i - start] == 1 && (tokens[i].type == '*' || tokens[i].type == '/'))
+        index = i;
+    }
+  }
+  if (index == -1)
+  {
+    for (i = end; i >= start; i--)
+    {
+      if (main[i - start] == 1 && tokens[i].type == TK_DERE)
+        index = i;
     }
   }
   return index;
@@ -232,6 +289,9 @@ static word_t eval(Token *tokens,int p,int q,bool *success) {
       case '-': return val1 - val2;
       case '*': return val1 * val2;
       case '/': return val1 / val2;
+      case TK_AND: return val1 && val2;
+      case TK_EQ: return val1 == val2;
+      case TK_NEQ: return val1 != val2;
       default: 
         Assert(0, "Unknown operator"); 
         return 0;

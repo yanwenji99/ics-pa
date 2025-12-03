@@ -19,6 +19,7 @@
  * Type 'man regex' for more information about POSIX regex functions.
  */
 #include <regex.h>
+#include <memory/vaddr.h>
 
 enum {
   TK_NOTYPE = 256, TK_EQ,TK_NEG,TK_NEQ,TK_AND,TK_DERE,TK_REG
@@ -269,6 +270,10 @@ static word_t eval(Token *tokens,int p,int q,bool *success) {
   if(p>q) {
     *success = false;
     return 0;
+  }
+  if(tokens[p].type==TK_DERE){
+    word_t addr = eval(tokens, p + 1, q, success);
+    return vaddr_read(addr,4);
   }
   if(tokens[p].type==TK_NEG){
     word_t val = eval(tokens, p + 1, q, success);

@@ -48,7 +48,7 @@ static struct rule {
     {"\\(", '('},                          // left parenthesis
     {"\\)", ')'},                          // right parenthesis
     {"\\$\\$0", TK_REG},                   // register $0
-    {"\\$[a-zA-Z0-9][a-zA-Z0-9]", TK_REG}, // register
+    {"\\$[a-zA-Z0-9]+", TK_REG}, // register
     {"0x[0-9a-fA-F]+", 'h'},               // 16
     {"[0-9]+", 'n'},                       // number
 };

@@ -144,6 +144,8 @@ static int cmd_w(char *args){
 }
 
 static int cmd_d(char *args){
+  int no = atoi(strtok(args, " "));
+  free_wp(find_wp(no));
   return 0;
 }
 

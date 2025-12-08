@@ -17,8 +17,10 @@
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+
 #include "sdb.h"
 #include <memory/vaddr.h>
+#include "watchpoint.h"
 
 static int is_batch_mode = false;
 
@@ -26,7 +28,7 @@ void init_regex();
 void init_wp_pool();
 
 /* We use the `readline' library to provide more flexibility to read from stdin. */
-static char* rl_gets() {
+static char *rl_gets(){
   static char *line_read = NULL;
 
   if (line_read) {
@@ -55,11 +57,16 @@ static int cmd_q(char *args) {
 }
 
 static int cmd_info(char *args) {
-  if (args[0] == 'r') {
-    isa_reg_display();
-  }
-  else {
-    printf("Unknown info command '%s'\n", args);
+  switch (args[0]) {
+    case 'r':
+      isa_reg_display();
+      break;
+    case 'w':
+
+      break;
+    default:
+      printf("Unknown info command '%s'\n", args);
+      break;
   }
   return 0;
 }
@@ -99,6 +106,7 @@ static int cmd_p(char *args) {
   }
   return 0;
 }
+
 static int cmd_fp(char *args) {
   FILE *fp = fopen(args, "r");
   if (fp == NULL) {
@@ -127,6 +135,18 @@ static int cmd_fp(char *args) {
   return 0;
 }
 
+static int cmd_w(char *args){
+  char *e=strtok(args, " ");
+  init_wp_pool();
+  WP *newwp=new_wp();
+  strcpy(newwp->name,e);
+  return 0;
+}
+
+static int cmd_d(char *args){
+  return 0;
+}
+
 static int cmd_help(char *args);
 
 static struct {
@@ -142,6 +162,8 @@ static struct {
   { "si", "Step into instruction", cmd_si },
   { "p", "Evaluate expression", cmd_p },
   { "fp"," Evaluate expression in file", cmd_fp },
+  { "w", "Set a watchpoint", cmd_w },
+  { "d", "Delete a watchpoint", cmd_d },
   
   /* TODO: Add more commands */
 
@@ -201,7 +223,6 @@ void sdb_mainloop() {
     extern void sdl_clear_event_queue();
     sdl_clear_event_queue();
 #endif
-
     int i;
     for (i = 0; i < NR_CMD; i ++) {
       if (strcmp(cmd, cmd_table[i].name) == 0) {

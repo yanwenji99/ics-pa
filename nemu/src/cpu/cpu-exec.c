@@ -18,6 +18,9 @@
 #include <cpu/difftest.h>
 #include <locale.h>
 
+#include "../monitor/sdb/watchpoint.h"
+static word_t val[NR_WP];
+
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
  * This is useful when you use the `si' command.
@@ -35,6 +38,19 @@ void device_update();
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #ifdef CONFIG_ITRACE_COND
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
+#endif
+#if CONFIG_WATCHPOINT==1
+  WP *head=find_wp();
+  while(head!=NULL){
+    bool success=true;
+    uint32_t new_val=expr(head->name, &success);
+    if(new_val!=val[head->NO]){
+      val[head->NO]=new_val;
+      set_nemu_state(NEMU_STOP, _this->pc, 0);
+      printf("Watchpoint %d: %s has been triggered\n",head->NO,head->name);
+    }
+    head=head->next;
+  }
 #endif
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));

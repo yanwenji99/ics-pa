@@ -62,7 +62,7 @@ static int cmd_info(char *args) {
       isa_reg_display();
       break;
     case 'w':
-
+      show_wp();
       break;
     default:
       printf("Unknown info command '%s'\n", args);

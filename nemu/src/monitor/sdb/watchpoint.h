@@ -20,3 +20,4 @@ void init_wp_pool();
 WP *new_wp();
 void free_wp(WP *wp);
 WP* find_wp();
+void show_wp();

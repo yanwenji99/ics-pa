@@ -79,3 +79,12 @@ void free_wp(WP *wp){
 WP* find_wp(){
   return head;
 }
+
+void show_wp(){
+  WP *temp = head;
+  printf("Num\tWhat\n");
+  while(temp!=NULL){
+    printf("%d\t%s\n",temp->NO,temp->name);
+    temp = temp->next;
+  }
+}

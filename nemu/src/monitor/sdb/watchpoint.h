@@ -5,15 +5,14 @@
 typedef struct watchpoint
 {
     int NO;
-    struct watchpoint *next;
 
     /* TODO: Add more members if necessary */
-    union
-    {
-        int ival;
-        char name[32];
-    };
+    
+    int ival;
+    char name[32];
+    bool used;
 
+    struct watchpoint *next;
 } WP;
 
 void init_wp_pool();

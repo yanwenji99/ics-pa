@@ -140,8 +140,8 @@ static int cmd_fp(char *args) {
 
 static int cmd_w(char *args){
   WP *newwp=new_wp();
-  printf("%s", args);
   strcpy(newwp->name, args);
+  printf("Watchpoint %d: %s set\n",newwp->NO,newwp->name);
   bool success=true;
   uint32_t val=vaddr_expr(args, &success);
   newwp->ival=val;

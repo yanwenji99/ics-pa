@@ -19,5 +19,6 @@ typedef struct watchpoint
 void init_wp_pool();
 WP *new_wp();
 void free_wp(WP *wp);
-WP* find_wp();
+WP* find_wp(int no);
+WP *find_head();
 void show_wp();

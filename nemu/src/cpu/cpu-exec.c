@@ -40,7 +40,7 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
   if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
 #endif
 #ifdef CONFIG_WATCHPOINT
-  WP *head=find_wp();
+  WP *head=find_head();
   while(head!=NULL){
     bool success=true;
     uint32_t new_val=expr(head->name, &success);

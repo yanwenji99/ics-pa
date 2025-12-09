@@ -76,7 +76,19 @@ void free_wp(WP *wp){
   free(wp);
 }
 
-WP* find_wp(){
+WP* find_wp(int no){
+  WP *temp = head;
+  while(temp!=NULL){
+    if(temp->NO==no){
+      return temp;
+    }
+    temp = temp->next;
+  }
+  printf("Watchpoint %d not found!\n",no);
+  return NULL;
+}
+
+WP *find_head(){
   return head;
 }
 

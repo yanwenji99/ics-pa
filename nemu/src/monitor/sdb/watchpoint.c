@@ -22,8 +22,8 @@ typedef struct watchpoint {
   struct watchpoint *next;
 
   /* TODO: Add more members if necessary */
-  int ival;
   char name[32];
+  int ival;
 
 } WP;
 

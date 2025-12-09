@@ -100,3 +100,17 @@ void show_wp(){
     temp = temp->next;
   }
 }
+
+WP *trigger_wp(){
+  WP *temp=find_head();
+  while(temp!=NULL){
+    bool success=true;
+    uint32_t new_val=expr(temp->name, &success);
+    if(new_val!=temp->ival){
+      temp->ival=new_val;
+      return temp;
+    }
+    temp=temp->next;
+  }
+  return NULL;
+}

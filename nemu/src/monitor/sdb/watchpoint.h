@@ -22,3 +22,4 @@ void free_wp(WP *wp);
 WP* find_wp(int no);
 WP *find_head();
 void show_wp();
+WP *trigger_wp();

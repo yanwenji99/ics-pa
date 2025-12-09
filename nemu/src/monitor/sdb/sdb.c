@@ -139,6 +139,9 @@ static int cmd_w(char *args){
   char *e=strtok(args, " ");
   WP *newwp=new_wp();
   strcpy(newwp->name,e);
+  bool success=true;
+  uint32_t val=expr(e, &success);
+  newwp->ival=val;
   return 0;
 }
 

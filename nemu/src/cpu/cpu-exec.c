@@ -20,6 +20,7 @@
 
 #include "../monitor/sdb/watchpoint.h"
 
+
 /* The assembly code of instructions executed is only output to the screen
  * when the number of instructions executed is less than this value.
  * This is useful when you use the `si' command.
@@ -40,9 +41,9 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #endif
 #ifdef CONFIG_WATCHPOINT
   WP *tri = trigger_wp();
-  while (tri != NULL) {
-      set_nemu_state(NEMU_STOP, _this->pc, 0);
-      printf("Watchpoint %d: %s has been triggered\n",tri->NO,tri->name);
+  while (tri != NULL){
+    set_nemu_state(NEMU_STOP, _this->pc, 0);
+    printf("Watchpoint %d: %s has been triggered\n",tri->NO,tri->name);
   }
 #endif
   if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }

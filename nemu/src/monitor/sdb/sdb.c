@@ -77,6 +77,9 @@ static int cmd_x(char *args) {
   int N = strtol(num_str, NULL, 10);
   bool success = true;
   word_t start_addr = expr(addr, &success);
+  if(start_addr<CONFIG_MBASE){
+    start_addr+=CONFIG_MBASE;
+  }
   for (int i = 0; i < N; i++) 
   {
     uint32_t data=vaddr_read(start_addr + i*4, 4);

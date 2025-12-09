@@ -41,7 +41,7 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
 #endif
 #ifdef CONFIG_WATCHPOINT
   WP *tri = trigger_wp();
-  while (tri != NULL){
+  if (tri != NULL){
     set_nemu_state(NEMU_STOP, _this->pc, 0);
     printf("Watchpoint %d: %s has been triggered\n",tri->NO,tri->name);
   }

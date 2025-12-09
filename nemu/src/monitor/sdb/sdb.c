@@ -137,7 +137,6 @@ static int cmd_fp(char *args) {
 
 static int cmd_w(char *args){
   char *e=strtok(args, " ");
-  init_wp_pool();
   WP *newwp=new_wp();
   strcpy(newwp->name,e);
   return 0;

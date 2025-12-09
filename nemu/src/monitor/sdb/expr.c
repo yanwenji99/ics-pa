@@ -322,3 +322,21 @@ word_t expr(char *e, bool *success) {
 
   return result;
 }
+word_t vaddr_expr(char *e, bool *success)
+{
+  if (!make_token(e))
+  {
+    *success = false;
+    return 0;
+  }
+
+  /* TODO/eval: Insert codes to evaluate the expression. */
+  int p = 0, q = nr_token - 1;
+  word_t start_addr = eval(tokens, p, q, success);
+
+  if (start_addr < CONFIG_MBASE){
+    start_addr += CONFIG_MBASE;
+  }
+  word_t result=vaddr_read(start_addr,4);
+  return result;
+}

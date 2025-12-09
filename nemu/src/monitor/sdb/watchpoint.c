@@ -101,14 +101,21 @@ void show_wp(){
 
 WP *trigger_wp(){
   WP *temp=find_head();
+  WP *frist=temp;
+  bool triggered=false;
   while(temp!=NULL){
     bool success=true;
     uint32_t new_val=expr(temp->name, &success);
     if(new_val!=temp->ival){
       temp->ival=new_val;
-      return temp;
+      triggered=true;
+      if(strcmp(temp->name,frist->name)<0)
+        frist = temp;
     }
     temp=temp->next;
   }
-  return NULL;
+  if(triggered==false)
+    return NULL;
+  else
+    return frist;
 }

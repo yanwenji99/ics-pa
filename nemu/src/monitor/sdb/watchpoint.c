@@ -98,10 +98,10 @@ WP *find_head(){
 
 void show_wp(){
   WP *temp = head;
-  printf("%-4s %-20s %s\n", "Num", "Name", "Value (hex)");
+  printf("%-4s %-16s %s\n", "Num", "Name", "Value (hex)");
   while (temp != NULL)
   {
-    printf("%-4d %-20s 0x%08x\n", temp->NO, temp->name, temp->ival);
+    printf("%-4d %-16s 0x%08x\n", temp->NO, temp->name, temp->ival);
     temp = temp->next;
   }
 }

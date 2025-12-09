@@ -139,8 +139,8 @@ static int cmd_fp(char *args) {
 }
 
 static int cmd_w(char *args){
-  char *e=strtok(args, " ");
   WP *newwp=new_wp();
+  char *e=strtok(args, " ");
   strcpy(newwp->name,e);
   bool success=true;
   uint32_t val=vaddr_expr(e, &success);

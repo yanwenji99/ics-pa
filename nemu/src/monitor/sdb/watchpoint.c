@@ -92,9 +92,9 @@ WP *find_head(){
 
 void show_wp(){
   WP *temp = head;
-  printf("Num\tWhat\n");
+  printf("Num\tName\tValue\n");
   while(temp!=NULL){
-    printf("%d\t%s\n",temp->NO,temp->name);
+    printf("%d\t%s\t%d\n",temp->NO,temp->name,temp->ival);
     temp = temp->next;
   }
 }

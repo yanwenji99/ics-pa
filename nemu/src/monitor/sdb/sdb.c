@@ -142,7 +142,7 @@ static int cmd_w(char *args){
   WP *newwp=new_wp();
   strcpy(newwp->name, args);
   bool success=true;
-  uint32_t val=vaddr_expr(args, &success);
+  uint32_t val=expr(args, &success);
   newwp->ival=val;
   return 0;
 }

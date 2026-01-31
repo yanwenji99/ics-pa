@@ -23,7 +23,7 @@
 #define Mw vaddr_write
 
 enum {
-  TYPE_I, TYPE_U, TYPE_S,
+  TYPE_I, TYPE_U, TYPE_S,TYPE_J,
   TYPE_N, // none
 };
 
@@ -32,6 +32,17 @@ enum {
 #define immI() do { *imm = SEXT(BITS(i, 31, 20), 12); } while(0)
 #define immU() do { *imm = SEXT(BITS(i, 31, 12), 20) << 12; } while(0)
 #define immS() do { *imm = (SEXT(BITS(i, 31, 25), 7) << 5) | BITS(i, 11, 7); } while(0)
+#define immJ() do { \
+  /* J-type格式: [20|10:1|11|19:12] */ \
+  uint32_t imm_20   = BITS(i, 31, 31); \
+  uint32_t imm_10_1 = BITS(i, 30, 21); \
+  uint32_t imm_11   = BITS(i, 20, 20); \
+  uint32_t imm_19_12 = BITS(i, 19, 12); \
+  /* 组合立即数 */ \
+  *imm = (imm_20 << 20) | (imm_19_12 << 12) | (imm_11 << 11) | (imm_10_1 << 1); \
+  /* 符号扩展 */ \
+  *imm = SEXT(*imm, 21); \
+} while(0)
 
 static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_t *imm, int type) {
   uint32_t i = s->isa.inst;
@@ -42,6 +53,7 @@ static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_
     case TYPE_I: src1R();          immI(); break;
     case TYPE_U:                   immU(); break;
     case TYPE_S: src1R(); src2R(); immS(); break;
+    case TYPE_J:                   immJ(); break;
     case TYPE_N: break;
     default: panic("unsupported type = %d", type);
   }
@@ -49,14 +61,7 @@ static void decode_operand(Decode *s, int *rd, word_t *src1, word_t *src2, word_
 
 static int decode_exec(Decode *s) {
   s->dnpc = s->snpc;
-  if (s->pc == 0x80000010)
-  { // main 函数入口地址
-    printf("\n=== MAIN FUNCTION CALLED ===\n");
-    printf("PC = 0x%08x (main入口)\n", s->pc);
-    printf("Caller return address (ra) = 0x%08x\n", R(1));
-    printf("Stack pointer (sp) = 0x%08x\n", R(2));
-    printf("============================\n\n");
-  }
+
 #define INSTPAT_INST(s) ((s)->isa.inst)
 #define INSTPAT_MATCH(s, name, type, ... /* execute body */ ) { \
   int rd = 0; \
@@ -80,7 +85,7 @@ static int decode_exec(Decode *s) {
   INSTPAT("??????? ????? ????? 000 ????? 00100 11", addi   , I, R(rd) = src1 + imm);
   // INSTPAT("??????? ????? ????? 000 ????? 00100 11", addi, I, R(rd) = R(rs1) + imm);
   INSTPAT("??????? ????? ????? ??? ????? 01101 11", lui    , U, R(rd) = imm);
-  INSTPAT("??????? ????? ????? ??? ????? 11011 11", jal    , I, s->dnpc = s->pc + imm; R(rd) = s->pc + 4;);
+  INSTPAT("??????? ????? ????? ??? ????? 11011 11", jal    , J, s->dnpc = s->pc + imm; R(rd) = s->pc + 4;);
   INSTPAT("??????? ????? ????? 010 ????? 01000 11", sw     , S, Mw(src1 + imm, 4, src2););
   INSTPAT("??????? ????? ????? 000 ????? 11001 11", jalr   , I, word_t t_pc = s->pc + 4; s->dnpc = (src1 + imm) & ~1; R(rd) = t_pc;); // ret
 

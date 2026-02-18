@@ -22,7 +22,7 @@ char *strcpy(char *dst, const char *src) {
     dst++;
     src++;
   }
-  *dst = '\0';
+  *dst = '\0'; // 注意末尾添加'\0'
   return ret;
 }
 
@@ -36,7 +36,7 @@ char *strncpy(char *dst, const char *src, size_t n) {
   for(; i < n; i++)
   {
     dst[i] = '\0';
-  }
+  } // 加入n的判断，同时在src不足n时填充'\0'
   return ret;
 }
 
@@ -48,7 +48,7 @@ char *strcat(char *dst, const char *src) {
     len++;
     src++;
   }
-  dst[len] = '\0';
+  dst[len] = '\0'; // 注意末尾添加'\0'
   return ret;
 }
 
@@ -56,7 +56,7 @@ int strcmp(const char *s1, const char *s2) {
   while(*s1 != '\0' && *s2 != '\0')
   {
     if(*s1 != *s2)
-      return (unsigned char)*s1 - (unsigned char)*s2;
+      return (unsigned char)*s1 - (unsigned char)*s2; // 注意返回值应该是无符号字符的差值，以避免负数问题
     s1++;
     s2++;
   }

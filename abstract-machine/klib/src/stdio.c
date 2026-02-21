@@ -55,7 +55,6 @@ int vsnprintf_internal(char *out, size_t n, const char *fmt, va_list ap)
   {
     out[buf.size - 1] = '\0';
   }
-  out_str(&buf); // 输出缓冲区内容
   return buf.total;
 }
 
@@ -116,7 +115,7 @@ const char* parse_format(p_buf *buf, const char *fmt, va_list ap)
     format_int(buf, va_arg(ap, int));
     break;
   case 's':
-    format_str(buf, va_arg(ap, char *));
+    format_str(buf, va_arg(ap, const char *));
     break;
   }
 

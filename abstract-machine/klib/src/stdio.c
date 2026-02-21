@@ -137,6 +137,7 @@ int sprintf(char *out, const char *fmt, ...)
   va_list args;
   va_start(args, fmt);
   int result = vsprintf(out, fmt, args);
+  out_str(&(p_buf){.buffer = out, .size = __INT_MAX__, .pos = 0, .total = 0}); // 输出缓冲区内容
   va_end(args);
   return result;
 }

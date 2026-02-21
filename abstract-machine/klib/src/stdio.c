@@ -2,6 +2,7 @@
 #include <klib.h>
 #include <klib-macros.h>
 #include <stdarg.h>
+#include <stdio.h>
 
 #if !defined(__ISA_NATIVE__) || defined(__NATIVE_USE_KLIB__)
 
@@ -105,7 +106,7 @@ void format_str(p_buf *buf, const char *str)
 const char *parse_format(p_buf *buf, const char *fmt, va_list ap)
 {
   // 解析格式字符串，处理不同的格式说明符
-  // 根据格式说明符从 va_list 中获取对应的参数，并调用 write_char 或其他辅助函数写入缓冲区
+  // 根据格式说明符从 va_list 中获取对应的参数，并调用 write_char 写入缓冲区
   fmt++; // 跳过 '%' 字符
 
   // 处理格式说明符

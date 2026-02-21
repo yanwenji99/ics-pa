@@ -22,7 +22,7 @@ void out_str(p_buf *buf)
 {
   // 从缓冲区读取并输出每个字符
   int i = 0;
-  while(buf->buffer[i] != '\0' && i < buf->pos)
+  while (buf->buffer[i] != '\0' && i < buf->pos)
   {
     putch(buf->buffer[i++]);
   }
@@ -30,16 +30,16 @@ void out_str(p_buf *buf)
 
 int vsnprintf_internal(char *out, size_t n, const char *fmt, va_list ap)
 {
-  if(n == 0)
+  if (n == 0)
     return 0;
   p_buf buf = {
       .buffer = out,
       .size = n,
       .pos = 0,
       .total = 0}; // 初始化缓冲区结构体
-  while( *fmt != '\0' && buf.total < __INT_MAX__)
+  while (*fmt != '\0' && buf.total < __INT_MAX__)
   {
-    if(*fmt != '%')
+    if (*fmt != '%')
     {
       write_char(&buf, *fmt); // 直接写入普通字符
       fmt++;
@@ -60,7 +60,7 @@ int vsnprintf_internal(char *out, size_t n, const char *fmt, va_list ap)
 
 void write_char(p_buf *buf, char c)
 {
-  if(buf->pos < buf->size - 1) // 确保有空间写入字符
+  if (buf->pos < buf->size - 1) // 确保有空间写入字符
   {
     buf->buffer[buf->pos++] = c; // 写入字符并更新位置
   }
@@ -102,7 +102,7 @@ void format_str(p_buf *buf, const char *str)
   }
 }
 
-const char* parse_format(p_buf *buf, const char *fmt, va_list ap)
+const char *parse_format(p_buf *buf, const char *fmt, va_list ap)
 {
   // 解析格式字符串，处理不同的格式说明符
   // 根据格式说明符从 va_list 中获取对应的参数，并调用 write_char 或其他辅助函数写入缓冲区
@@ -137,8 +137,8 @@ int sprintf(char *out, const char *fmt, ...)
   va_list args;
   va_start(args, fmt);
   int result = vsprintf(out, fmt, args);
-  out_str(&(p_buf){.buffer = out, .size = __INT_MAX__, .pos = 0, .total = 0}); // 输出缓冲区内容
   va_end(args);
+  putstr(out);
   return result;
 }
 

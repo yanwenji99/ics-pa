@@ -18,7 +18,7 @@ void write_char(p_buf *buf, char c);
 void format_int(p_buf *buf, int value);
 void format_str(p_buf *buf, const char *str);
 
-void out_str(p_buf *buf)
+void out_buffer(p_buf *buf)
 {
   // 从缓冲区读取并输出每个字符
   int i = 0;
@@ -138,7 +138,6 @@ int sprintf(char *out, const char *fmt, ...)
   va_start(args, fmt);
   int result = vsprintf(out, fmt, args);
   va_end(args);
-  putstr(out);
   return result;
 }
 

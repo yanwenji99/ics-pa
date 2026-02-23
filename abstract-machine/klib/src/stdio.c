@@ -13,7 +13,7 @@ typedef struct __printf_buffer
   size_t total;
 } p_buf;
 
-const char *parse_format(p_buf *buf, const char *fmt, va_list *ap);
+const char *parse_format(p_buf *buf, const char *fmt, va_list ap);
 void write_char(p_buf *buf, char c);
 void format_int(p_buf *buf, int value);
 void format_str(p_buf *buf, const char *str);
@@ -45,7 +45,7 @@ int vsnprintf_internal(char *out, size_t n, const char *fmt, va_list ap)
       fmt++;
       continue;
     }
-    fmt = parse_format(&buf, fmt, &ap); // 解析格式字符串
+    fmt = parse_format(&buf, fmt, ap); // 解析格式字符串
   }
   if (buf.pos < buf.size)
   {
@@ -55,7 +55,6 @@ int vsnprintf_internal(char *out, size_t n, const char *fmt, va_list ap)
   {
     out[buf.size - 1] = '\0';
   } // 确保字符串以'\0'结尾
-  out_buffer(&buf); // 输出缓冲区内容
   return buf.total;
 }
 
@@ -103,7 +102,7 @@ void format_str(p_buf *buf, const char *str)
   }
 }
 
-const char *parse_format(p_buf *buf, const char *fmt, va_list *ap)
+const char *parse_format(p_buf *buf, const char *fmt, va_list ap)
 {
   // 解析格式字符串，处理不同的格式说明符
   // 根据格式说明符从 va_list 中获取对应的参数，并调用 write_char 写入缓冲区
@@ -113,10 +112,10 @@ const char *parse_format(p_buf *buf, const char *fmt, va_list *ap)
   switch (*fmt)
   {
   case 'd':
-    format_int(buf, va_arg(*ap, int));
+    format_int(buf, va_arg(ap, int));
     break;
   case 's':
-    format_str(buf, va_arg(*ap, const char *));
+    format_str(buf, va_arg(ap, const char *));
     break;
   }
 

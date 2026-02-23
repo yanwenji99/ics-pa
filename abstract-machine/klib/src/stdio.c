@@ -54,7 +54,8 @@ int vsnprintf_internal(char *out, size_t n, const char *fmt, va_list ap)
   else if (buf.size > 0)
   {
     out[buf.size - 1] = '\0';
-  }
+  } // 确保字符串以'\0'结尾
+  out_buffer(&buf); // 输出缓冲区内容
   return buf.total;
 }
 

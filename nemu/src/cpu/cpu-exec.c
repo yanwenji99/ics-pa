@@ -27,11 +27,54 @@
  * You can modify this value as you want.
  */
 #define MAX_INST_TO_PRINT 10
+#define RINGBUFFER_LEN 16
 
 CPU_state cpu = {};
 uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
+
+typedef struct  {
+
+  char logbuf[128];
+  bool valid;
+
+} once_ring_buffer;
+
+typedef struct ring_buffer{
+  once_ring_buffer buf[RINGBUFFER_LEN];
+  int next;
+} ringbuf;
+
+static ringbuf iringbuf = {};
+
+void ringbuf_push(Decode *s) {
+#ifdef CONFIG_ITRACE
+  once_ring_buffer *e = &iringbuf.buf[iringbuf.next];
+  e->valid = true;
+  strncpy(e->logbuf, s->logbuf, sizeof(e->logbuf) - 1);
+  iringbuf.next = (iringbuf.next + 1) % RINGBUFFER_LEN;
+#endif
+}
+
+void ringbuf_print() {
+#ifdef CONFIG_ITRACE
+  int error_index = (iringbuf.next - 1 + RINGBUFFER_LEN) % RINGBUFFER_LEN;
+  for (int i = 0; i < RINGBUFFER_LEN; i++) {
+    int index = (iringbuf.next + i) % RINGBUFFER_LEN;
+    once_ring_buffer *e = &iringbuf.buf[index];
+    if (e->valid) {
+      continue;
+    }
+    if(index == error_index) {
+      printf("--> %s\n", e->logbuf);
+    } 
+    else {
+      printf("    %s\n", e->logbuf);
+    }
+  }
+#endif
+}
 
 void device_update();
 
@@ -85,7 +128,8 @@ static void execute(uint64_t n) {
   Decode s;
   for (;n > 0; n --) {
     exec_once(&s, cpu.pc);
-    g_nr_guest_inst ++;
+    ringbuf_push(&s);
+    g_nr_guest_inst++;
     trace_and_difftest(&s, cpu.pc);
     if (nemu_state.state != NEMU_RUNNING) break;
     IFDEF(CONFIG_DEVICE, device_update());
@@ -103,6 +147,7 @@ static void statistic() {
 
 void assert_fail_msg() {
   isa_reg_display();
+  ringbuf_print();
   statistic();
 }
 

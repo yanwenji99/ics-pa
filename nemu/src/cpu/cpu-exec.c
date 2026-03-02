@@ -53,6 +53,7 @@ void ringbuf_push(Decode *s) {
   once_ring_buffer *e = &iringbuf.buf[iringbuf.next];
   e->valid = true;
   strncpy(e->logbuf, s->logbuf, sizeof(e->logbuf) - 1);
+  e->logbuf[sizeof(e->logbuf) - 1] = '\0';
   iringbuf.next = (iringbuf.next + 1) % RINGBUFFER_LEN;
 #endif
 }
@@ -63,7 +64,7 @@ void ringbuf_print() {
   for (int i = 0; i < RINGBUFFER_LEN; i++) {
     int index = (iringbuf.next + i) % RINGBUFFER_LEN;
     once_ring_buffer *e = &iringbuf.buf[index];
-    if (e->valid) {
+    if (!e->valid) {
       continue;
     }
     if(index == error_index) {

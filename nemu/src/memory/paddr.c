@@ -44,20 +44,6 @@ static void out_of_bound(paddr_t addr)
         addr, PMEM_LEFT, PMEM_RIGHT, cpu.pc);
 }
 
-static void mtrace_log(char type, paddr_t addr, int len, word_t data) // 记录内存访问日志
-{
-#ifdef CONFIG_MTRACE
-  char logbuf[128];
-  char *p = logbuf;
-  p += snprintf(p, sizeof(logbuf), "mtrace: pc=" FMT_WORD, cpu.pc);
-  p += snprintf(p, logbuf + sizeof(logbuf) - p, " addr=" FMT_PADDR, addr);
-  p += snprintf(p, logbuf + sizeof(logbuf) - p, " len=%d", len);
-  p += snprintf(p, logbuf + sizeof(logbuf) - p, " type=%c", type);
-  snprintf(p, logbuf + sizeof(logbuf) - p, " data=" FMT_WORD, data);
-  log_write("%s\n", logbuf);
-#endif
-}
-
 void init_mem()
 {
 #if defined(CONFIG_PMEM_MALLOC)
@@ -68,19 +54,30 @@ void init_mem()
   Log("physical memory area [" FMT_PADDR ", " FMT_PADDR "]", PMEM_LEFT, PMEM_RIGHT);
 }
 
+static void mtrace_log(char type, paddr_t addr, int len, word_t data)
+{
+#ifdef CONFIG_MTRACE
+  char logbuf[128]; // 日志缓冲区，128字节足够存放一条日志
+  char *p = logbuf; // 指针p指向缓冲区当前位置
+
+  p += snprintf(p, sizeof(logbuf), "mtrace: pc=" FMT_WORD, cpu.pc);        // 记录程序计数器(PC) - 当前执行指令的地址
+  p += snprintf(p, logbuf + sizeof(logbuf) - p, " addr=" FMT_PADDR, addr); // 记录访问的物理地址，FMT_PADDR是地址格式化宏
+  p += snprintf(p, logbuf + sizeof(logbuf) - p, " len=%d", len);           // 记录访问长度
+  p += snprintf(p, logbuf + sizeof(logbuf) - p, " type=%c", type);         // 记录访问类型（读/写）
+  snprintf(p, logbuf + sizeof(logbuf) - p, " data=" FMT_WORD, data);       // 记录数据值，FMT_WORD是字数据的格式化宏
+  log_write("%s\n", logbuf);
+#endif
+}
+
 word_t paddr_read(paddr_t addr, int len)
 {
   if (likely(in_pmem(addr)))
   {
     word_t data = pmem_read(addr, len);
-    mtrace_log('R', addr, len, data);
+    mtrace_log('R', addr, len, data); // 记录读操作日志
     return data;
   }
-#ifdef CONFIG_DEVICE
-  word_t data = mmio_read(addr, len);
-  mtrace_log('R', addr, len, data);
-  return data;
-#endif
+  IFDEF(CONFIG_DEVICE, return mmio_read(addr, len));
   out_of_bound(addr);
   return 0;
 }
@@ -89,14 +86,10 @@ void paddr_write(paddr_t addr, int len, word_t data)
 {
   if (likely(in_pmem(addr)))
   {
-    mtrace_log('W', addr, len, data);
+    mtrace_log('W', addr, len, data); // 记录写操作日志
     pmem_write(addr, len, data);
     return;
   }
-#ifdef CONFIG_DEVICE
-  mtrace_log('W', addr, len, data);
-  mmio_write(addr, len, data);
-  return;
-#endif
+  IFDEF(CONFIG_DEVICE, mmio_write(addr, len, data); return);
   out_of_bound(addr);
 }

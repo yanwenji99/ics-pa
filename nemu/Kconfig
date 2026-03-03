@@ -151,6 +151,11 @@ config ITRACE_COND
   string "Only trace instructions when the condition is true"
   default "true"
 
+config MTRACE
+  depends on TRACE
+  bool "Enable memory tracer"
+  default n
+
 # 监视点配置
 config WATCHPOINT
   bool "Enable watchpoint (monitor variable value changes)"  # 开关名称（界面显示）

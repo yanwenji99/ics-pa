@@ -53,6 +53,7 @@ void init_mem() {
 word_t paddr_read(paddr_t addr, int len) {
   if (likely(in_pmem(addr))) {
     word_t data = pmem_read(addr, len);
+    // MTRACE 打开时记录访存日志，输出到 log 文件（受 TRACE_START/TRACE_END 控制）。
     IFDEF(CONFIG_MTRACE, log_write("mtrace: pc = " FMT_WORD ", addr = " FMT_PADDR ", len = %d, type = R, data = " FMT_WORD "\n", cpu.pc, addr, len, data));
     return data;
   }
@@ -62,7 +63,9 @@ word_t paddr_read(paddr_t addr, int len) {
 }
 
 void paddr_write(paddr_t addr, int len, word_t data) {
+  // 物理地址写流程：优先写入 pmem；若启用设备则回退到 mmio；否则报越界。
   if (likely(in_pmem(addr))) {
+    // MTRACE 打开时记录访存日志，输出到 log 文件（受 TRACE_START/TRACE_END 控制）。
     IFDEF(CONFIG_MTRACE, log_write("mtrace: pc = " FMT_WORD ", addr = " FMT_PADDR ", len = %d, type = W, data = " FMT_WORD "\n", cpu.pc, addr, len, data));
     pmem_write(addr, len, data);
     return;

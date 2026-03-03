@@ -37,32 +37,32 @@ static bool g_print_step = false;
 typedef struct  {
 
   char logbuf[128];
-  bool valid;
+  bool valid; // 标记该条目是否有效
 
 } once_ring_buffer;
 
 typedef struct ring_buffer{
   once_ring_buffer buf[RINGBUFFER_LEN];
-  int next;
+  int next; // 指向下一个要写入的位置
 } ringbuf;
 
 static ringbuf iringbuf = {};
 
 void ringbuf_push(Decode *s) {
 #ifdef CONFIG_ITRACE
-  once_ring_buffer *e = &iringbuf.buf[iringbuf.next];
+  once_ring_buffer *e = &iringbuf.buf[iringbuf.next]; // 获取当前要写入的位置
   e->valid = true;
   strncpy(e->logbuf, s->logbuf, sizeof(e->logbuf) - 1);
-  e->logbuf[sizeof(e->logbuf) - 1] = '\0';
-  iringbuf.next = (iringbuf.next + 1) % RINGBUFFER_LEN;
+  e->logbuf[sizeof(e->logbuf) - 1] = '\0'; // 确保字符串以'\0'结尾
+  iringbuf.next = (iringbuf.next + 1) % RINGBUFFER_LEN; // 更新下一个写入位置
 #endif
 }
 
 void ringbuf_print() {
 #ifdef CONFIG_ITRACE
-  int error_index = (iringbuf.next - 1 + RINGBUFFER_LEN) % RINGBUFFER_LEN;
+  int error_index = (iringbuf.next - 1 + RINGBUFFER_LEN) % RINGBUFFER_LEN; // 获取最后一条指令的索引
   for (int i = 0; i < RINGBUFFER_LEN; i++) {
-    int index = (iringbuf.next + i) % RINGBUFFER_LEN;
+    int index = (iringbuf.next + i) % RINGBUFFER_LEN; // 从下一个写入位置开始打印，确保按照正确的顺序输出
     once_ring_buffer *e = &iringbuf.buf[index];
     if (!e->valid) {
       continue;

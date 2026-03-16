@@ -29,8 +29,6 @@ override ARGS += $(ARGS_DIFF)
 
 # Command to execute NEMU
 IMG ?=
-FTRACE_ELF := $(basename $(IMG)).elf
-override ARGS += $(if $(CONFIG_FTRACE_AUTO_ELF),$(if $(wildcard $(FTRACE_ELF)),--elf=$(FTRACE_ELF),),)
 NEMU_EXEC := $(BINARY) $(ARGS) $(IMG)
 
 run-env: $(BINARY) $(DIFF_REF_SO)

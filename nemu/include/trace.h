@@ -23,5 +23,7 @@ void trace_print_step(Decode *s, bool print_step);
 void trace_ringbuf_push(Decode *s);
 void trace_ringbuf_print(void);
 void trace_log_mem(char type, paddr_t addr, int len, word_t data);
+void trace_log_func(const char *func_name, vaddr_t func_addr, bool is_entry);
+void trace_func_call_ret(Decode *s);
 
 #endif

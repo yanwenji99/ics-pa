@@ -43,9 +43,26 @@ typedef struct
   char name[128];
 } FuncSymbol;
 
+/**
+ * 静态全局变量
+ * - func_symbols: 动态数组，存储所有函数符号
+ * - nr_func_symbols: 当前已加载的函数数量
+ * - elf_info: ELF文件的基本信息（入口点、段范围等）
+ */
 static FuncSymbol *func_symbols = NULL;
 static int nr_func_symbols = 0;
 static ElfLoadResult elf_info = {};
+static int ftrace_depth = 0;
+
+#define FTRACE_MAX_DEPTH 1024
+typedef struct
+{
+  vaddr_t ret_addr;
+  char name[128];
+} FtraceFrame;
+
+static FtraceFrame ftrace_stack[FTRACE_MAX_DEPTH];
+static int ftrace_top = 0;
 
 static void reset_ftrace_state(void)
 {
@@ -55,6 +72,14 @@ static void reset_ftrace_state(void)
   elf_info = (ElfLoadResult){};
 }
 
+/**
+ * 从文件指定位置读取数据，失败则终止程序
+ * @param fp    已打开的文件指针
+ * @param offset 文件中的偏移量
+ * @param buf   目标缓冲区
+ * @param size  要读取的字节数
+ * @param what  描述信息（用于错误提示）
+ */
 static void read_file_or_panic(FILE *fp, long offset, void *buf, size_t size, const char *what) // 从文件fp的offset位置读取size字节到buf中，如果失败则打印what并退出
 {
   int ret = fseek(fp, offset, SEEK_SET);
@@ -74,6 +99,13 @@ static void check_elf_header(const TraceElfEhdr *ehdr, const char *elf_file) // 
          "%s ELF class does not match current ISA", elf_file);
 }
 
+/**
+ * 加载节头表(Section Headers)
+ * @param fp       已打开的ELF文件指针
+ * @param ehdr     ELF文件头
+ * @param elf_file ELF文件名
+ * @return 动态分配的节头表数组，需要调用者free
+ */
 static TraceElfShdr *load_section_headers(FILE *fp, const TraceElfEhdr *ehdr, const char *elf_file) // 从ELF文件fp中读取ehdr指定的节头表到内存中，如果失败则打印错误信息并退出
 {
   size_t shdr_size = ehdr->e_shentsize * ehdr->e_shnum;
@@ -83,6 +115,13 @@ static TraceElfShdr *load_section_headers(FILE *fp, const TraceElfEhdr *ehdr, co
   return shdr;
 }
 
+/**
+ * 加载字符串表(String Table)
+ * @param fp    已打开的ELF文件指针
+ * @param shdr  描述字符串表的节头
+ * @param what  描述信息（用于错误提示）
+ * @return 动态分配的字符串表（以'\0'结尾），需要调用者free
+ */
 static char *load_string_table(FILE *fp, const TraceElfShdr *shdr, const char *what) // 从ELF文件fp中读取shdr指定的字符串表到内存中，如果失败则打印错误信息并退出
 {
   char *strtab = malloc(shdr->sh_size + 1);
@@ -94,7 +133,6 @@ static char *load_string_table(FILE *fp, const TraceElfShdr *shdr, const char *w
 
 void init_ftrace(const char *elf_file)
 {
-#ifndef CONFIG_TARGET_AM
   if (elf_file == NULL)
   {
     reset_ftrace_state();
@@ -103,6 +141,8 @@ void init_ftrace(const char *elf_file)
   }
 
   reset_ftrace_state();
+  ftrace_depth = 0;
+  ftrace_top = 0;
   elf_info = load_elf(elf_file);
   int nr_symbols = load_elf_symbols(elf_file);
 
@@ -111,16 +151,11 @@ void init_ftrace(const char *elf_file)
       elf_info.text_start, elf_info.text_end,
       elf_info.data_start, elf_info.data_end,
       nr_symbols);
-#else
-  (void)elf_file;
-#endif
 }
 
 ElfLoadResult load_elf(const char *elf_file)
 {
   ElfLoadResult result = {};
-
-#ifndef CONFIG_TARGET_AM
   if (elf_file == NULL)
   {
     return result;
@@ -129,13 +164,18 @@ ElfLoadResult load_elf(const char *elf_file)
   FILE *fp = fopen(elf_file, "rb");
   Assert(fp != NULL, "Can not open ELF file '%s'", elf_file);
 
+  // 1. 读取并验证ELF头
   TraceElfEhdr ehdr;
   read_file_or_panic(fp, 0, &ehdr, sizeof(ehdr), "ELF header");
   check_elf_header(&ehdr, elf_file);
 
+  // 2. 记录入口点
   result.entry_point = (vaddr_t)ehdr.e_entry;
 
+  // 3. 加载节头表
   TraceElfShdr *shdr = load_section_headers(fp, &ehdr, elf_file);
+  
+  // 4. 如果有节名字符串表，查找.text和.data段
   if (ehdr.e_shstrndx != SHN_UNDEF)
   {
     Assert(ehdr.e_shstrndx < ehdr.e_shnum, "Invalid section name table index in %s", elf_file);
@@ -161,16 +201,11 @@ ElfLoadResult load_elf(const char *elf_file)
 
   free(shdr);
   fclose(fp);
-#else
-  (void)elf_file;
-#endif
-
   return result;
 }
 
 int load_elf_symbols(const char *elf_file)
 {
-#ifndef CONFIG_TARGET_AM
   if (elf_file == NULL)
   {
     return 0;
@@ -235,9 +270,131 @@ int load_elf_symbols(const char *elf_file)
   free(shdr);
   fclose(fp);
   return nr_func_symbols;
+}
+
+static const FuncSymbol *find_func_by_addr(vaddr_t addr)
+{
+  for (int i = 0; i < nr_func_symbols; i++)
+  {
+    if (addr >= func_symbols[i].start && addr < func_symbols[i].end)
+    {
+      return &func_symbols[i];
+    }
+  }
+  return NULL;
+}
+
+void trace_log_func(const char *func_name, vaddr_t func_addr, bool is_entry)
+{
+#ifdef CONFIG_TRACE
+  int indent_depth = is_entry ? ftrace_depth : (ftrace_depth > 0 ? ftrace_depth - 1 : 0);
+  int indent_len = indent_depth * 2;
+  if (indent_len > 120)
+  {
+    indent_len = 120;
+  }
+
+  char indent[121];
+  memset(indent, ' ', indent_len);
+  indent[indent_len] = '\0';
+
+  log_write("ftrace:%s%s " FMT_WORD " <%s>\n",
+            indent,
+            is_entry ? "call" : "ret ",
+            func_addr,
+            func_name);
+
+  if (is_entry)
+  {
+    ftrace_depth++;
+  }
+  else if (ftrace_depth > 0)
+  {
+    ftrace_depth--;
+  }
 #else
-  (void)elf_file;
-  return 0;
+  (void)func_name;
+  (void)func_addr;
+  (void)is_entry;
+#endif
+}
+
+#ifdef CONFIG_ISA_riscv
+static inline int32_t sign_extend_12(uint32_t imm)
+{
+  return ((int32_t)(imm << 20)) >> 20;
+}
+#endif
+
+void trace_func_call_ret(Decode *s)
+{
+#ifdef CONFIG_ISA_riscv
+  uint32_t inst = s->isa.inst;
+  uint32_t opcode = inst & 0x7f;
+  uint32_t rd = (inst >> 7) & 0x1f;
+
+  if (opcode == 0x6f)
+  {
+    if (rd == 1 || rd == 5)
+    {
+      const FuncSymbol *callee = find_func_by_addr(s->dnpc);
+      const char *name = callee ? callee->name : "?";
+      trace_log_func(name, s->dnpc, true);
+
+      if (ftrace_top < FTRACE_MAX_DEPTH)
+      {
+        ftrace_stack[ftrace_top].ret_addr = s->snpc;
+        strncpy(ftrace_stack[ftrace_top].name, name, sizeof(ftrace_stack[ftrace_top].name) - 1);
+        ftrace_stack[ftrace_top].name[sizeof(ftrace_stack[ftrace_top].name) - 1] = '\0';
+        ftrace_top++;
+      }
+    }
+    return;
+  }
+
+  if (opcode == 0x67)
+  {
+    uint32_t funct3 = (inst >> 12) & 0x7;
+    uint32_t rs1 = (inst >> 15) & 0x1f;
+    int32_t imm = sign_extend_12(inst >> 20);
+
+    if (funct3 != 0)
+    {
+      return;
+    }
+
+    if (rd == 1 || rd == 5)
+    {
+      const FuncSymbol *callee = find_func_by_addr(s->dnpc);
+      const char *name = callee ? callee->name : "?";
+      trace_log_func(name, s->dnpc, true);
+
+      if (ftrace_top < FTRACE_MAX_DEPTH)
+      {
+        ftrace_stack[ftrace_top].ret_addr = s->snpc;
+        strncpy(ftrace_stack[ftrace_top].name, name, sizeof(ftrace_stack[ftrace_top].name) - 1);
+        ftrace_stack[ftrace_top].name[sizeof(ftrace_stack[ftrace_top].name) - 1] = '\0';
+        ftrace_top++;
+      }
+      return;
+    }
+
+    if (rd == 0 && (rs1 == 1 || rs1 == 5) && imm == 0)
+    {
+      const FuncSymbol *caller = find_func_by_addr(s->dnpc);
+      const char *caller_name = caller ? caller->name : "?";
+
+      if (ftrace_top > 0)
+      {
+        ftrace_top--;
+      }
+
+      trace_log_func(caller_name, s->dnpc, false);
+      return;
+    }
+  }
+#else
+  (void)s;
 #endif
 }
 

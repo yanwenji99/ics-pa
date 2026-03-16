@@ -137,7 +137,7 @@ void init_monitor(int argc, char *argv[]) {
   init_sdb();
 
   IFDEF(CONFIG_ITRACE, init_disasm());
-  init_trace(elf_file);
+  init_ftrace(elf_file);
 
   /* Display welcome message. */
   welcome();

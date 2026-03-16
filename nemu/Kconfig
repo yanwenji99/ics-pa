@@ -155,6 +155,19 @@ config MTRACE
   bool "Enable memory tracer"
   default n
 
+config FTRACE
+  depends on TRACE && TARGET_NATIVE_ELF && ENGINE_INTERPRETER
+  bool "Enable function tracer"
+  default n
+
+config FTRACE_AUTO_ELF
+  depends on FTRACE
+  bool "Auto pass ELF inferred from IMG"
+  default y
+  help
+    When enabled, NEMU will append '--elf=$(basename $(IMG)).elf'
+    automatically during `make run`/`make gdb` if that ELF exists.
+
 config WATCHPOINT
   bool "Enable watchpoint (monitor variable value changes)"  
   default n  

@@ -65,7 +65,7 @@ static void execute(uint64_t n)
   for (; n > 0; n--)
   {
     exec_once(&s, cpu.pc);
-    trace_func_call_ret(&s);
+    IFDEF(CONFIG_FTRACE, trace_func_call_ret(&s));
     trace_ringbuf_push(&s);
     g_nr_guest_inst++;
     trace_and_difftest(&s, cpu.pc);

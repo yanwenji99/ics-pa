@@ -17,7 +17,6 @@ typedef struct
 void init_ftrace(const char *elf_file);
 ElfLoadResult load_elf(const char *elf_file);  // 加载ELF文件并返回相关信息
 int load_elf_symbols(const char *filename);  // 加载ELF文件中的符号表，返回符号数量
-int load_elf_strings(const char *filename);  // 加载ELF文件中的字符串表，返回字符串数量
 void trace_format_inst(Decode *s);
 void trace_write_inst(Decode *s);
 void trace_print_step(Decode *s, bool print_step);

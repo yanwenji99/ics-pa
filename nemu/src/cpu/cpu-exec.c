@@ -17,6 +17,7 @@
 #include <cpu/decode.h>
 #include <cpu/difftest.h>
 #include <locale.h>
+#include <trace.h>
 
 #include "../monitor/sdb/watchpoint.h"
 
@@ -27,62 +28,16 @@
  * You can modify this value as you want.
  */
 #define MAX_INST_TO_PRINT 10
-#define RINGBUFFER_LEN 16
 
 CPU_state cpu = {};
 uint64_t g_nr_guest_inst = 0;
 static uint64_t g_timer = 0; // unit: us
 static bool g_print_step = false;
 
-typedef struct  {
-
-  char logbuf[128];
-  bool valid; // 标记该条目是否有效
-
-} once_ring_buffer;
-
-typedef struct ring_buffer{
-  once_ring_buffer buf[RINGBUFFER_LEN];
-  int next; // 指向下一个要写入的位置
-} ringbuf;
-
-static ringbuf iringbuf = {};
-
-void ringbuf_push(Decode *s) {
-#ifdef CONFIG_ITRACE
-  once_ring_buffer *e = &iringbuf.buf[iringbuf.next]; // 获取当前要写入的位置
-  e->valid = true;
-  strncpy(e->logbuf, s->logbuf, sizeof(e->logbuf) - 1);
-  e->logbuf[sizeof(e->logbuf) - 1] = '\0'; // 确保字符串以'\0'结尾
-  iringbuf.next = (iringbuf.next + 1) % RINGBUFFER_LEN; // 更新下一个写入位置
-#endif
-}
-
-void ringbuf_print() {
-#ifdef CONFIG_ITRACE
-  int error_index = (iringbuf.next - 1 + RINGBUFFER_LEN) % RINGBUFFER_LEN; // 获取最后一条指令的索引
-  for (int i = 0; i < RINGBUFFER_LEN; i++) {
-    int index = (iringbuf.next + i) % RINGBUFFER_LEN; // 从下一个写入位置开始打印，确保按照正确的顺序输出
-    once_ring_buffer *e = &iringbuf.buf[index];
-    if (!e->valid) {
-      continue;
-    }
-    if(index == error_index) {
-      printf("--> %s\n", e->logbuf);
-    } 
-    else {
-      printf("    %s\n", e->logbuf);
-    }
-  }
-#endif
-}
-
 void device_update();
 
 static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
-#ifdef CONFIG_ITRACE_COND
-  if (ITRACE_COND) { log_write("%s\n", _this->logbuf); }
-#endif
+  trace_write_inst(_this);
 #ifdef CONFIG_WATCHPOINT
   WP *tri = trigger_wp();
   if (tri != NULL){
@@ -90,7 +45,7 @@ static void trace_and_difftest(Decode *_this, vaddr_t dnpc) {
     printf("Watchpoint %d: %s has been triggered\n",tri->NO,tri->name);
   }
 #endif
-  if (g_print_step) { IFDEF(CONFIG_ITRACE, puts(_this->logbuf)); }
+  trace_print_step(_this, g_print_step);
   IFDEF(CONFIG_DIFFTEST, difftest_step(_this->pc, dnpc));
 }
 
@@ -99,37 +54,14 @@ static void exec_once(Decode *s, vaddr_t pc) {
   s->snpc = pc;
   isa_exec_once(s);
   cpu.pc = s->dnpc;
-#ifdef CONFIG_ITRACE
-  char *p = s->logbuf;
-  p += snprintf(p, sizeof(s->logbuf), FMT_WORD ":", s->pc);
-  int ilen = s->snpc - s->pc;
-  int i;
-  uint8_t *inst = (uint8_t *)&s->isa.inst;
-#ifdef CONFIG_ISA_x86
-  for (i = 0; i < ilen; i ++) {
-#else
-  for (i = ilen - 1; i >= 0; i --) {
-#endif
-    p += snprintf(p, 4, " %02x", inst[i]);
-  }
-  int ilen_max = MUXDEF(CONFIG_ISA_x86, 8, 4);
-  int space_len = ilen_max - ilen;
-  if (space_len < 0) space_len = 0;
-  space_len = space_len * 3 + 1;
-  memset(p, ' ', space_len);
-  p += space_len;
-
-  void disassemble(char *str, int size, uint64_t pc, uint8_t *code, int nbyte);
-  disassemble(p, s->logbuf + sizeof(s->logbuf) - p,
-      MUXDEF(CONFIG_ISA_x86, s->snpc, s->pc), (uint8_t *)&s->isa.inst, ilen);
-#endif
+  trace_format_inst(s);
 }
 
 static void execute(uint64_t n) {
   Decode s;
   for (;n > 0; n --) {
     exec_once(&s, cpu.pc);
-    ringbuf_push(&s);
+    trace_ringbuf_push(&s);
     g_nr_guest_inst++;
     trace_and_difftest(&s, cpu.pc);
     if (nemu_state.state != NEMU_RUNNING) break;
@@ -179,7 +111,7 @@ void cpu_exec(uint64_t n) {
           nemu_state.halt_pc);
       // fall through
     case NEMU_ABORT:
-      ringbuf_print();
+      trace_ringbuf_print();
       Log("nemu: %s at pc = " FMT_WORD,
           (nemu_state.state == NEMU_ABORT ? ANSI_FMT("ABORT", ANSI_FG_RED) : (nemu_state.halt_ret == 0 ? ANSI_FMT("HIT GOOD TRAP", ANSI_FG_GREEN) : ANSI_FMT("HIT BAD TRAP", ANSI_FG_RED))),
           nemu_state.halt_pc);

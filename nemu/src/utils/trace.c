@@ -5,7 +5,6 @@
 
 #include <elf.h>
 
-
 #define RINGBUFFER_LEN 16
 
 typedef struct
@@ -146,7 +145,7 @@ void init_ftrace(const char *elf_file)
   elf_info = load_elf(elf_file);
   int nr_symbols = load_elf_symbols(elf_file);
 
-    Log("ftrace: entry=" FMT_WORD " .text=[" FMT_WORD ", " FMT_WORD ") .data=[" FMT_WORD ", " FMT_WORD ") funcs=%d",
+  Log("ftrace: entry=" FMT_WORD " .text=[" FMT_WORD ", " FMT_WORD ") .data=[" FMT_WORD ", " FMT_WORD ") funcs=%d",
       elf_info.entry_point,
       elf_info.text_start, elf_info.text_end,
       elf_info.data_start, elf_info.data_end,
@@ -174,7 +173,7 @@ ElfLoadResult load_elf(const char *elf_file)
 
   // 3. 加载节头表
   TraceElfShdr *shdr = load_section_headers(fp, &ehdr, elf_file);
-  
+
   // 4. 如果有节名字符串表，查找.text和.data段
   if (ehdr.e_shstrndx != SHN_UNDEF)
   {

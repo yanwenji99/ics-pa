@@ -151,7 +151,11 @@ void init_ftrace(const char *elf_file)
       elf_info.data_start, elf_info.data_end,
       nr_symbols);
 }
-
+/**
+ * 加载ELF文件的基本信息（入口点、代码段和数据段范围）
+ * @param elf_file ELF文件名
+ * @return ELF基本信息结构体
+ */
 ElfLoadResult load_elf(const char *elf_file)
 {
   ElfLoadResult result = {};
@@ -178,6 +182,7 @@ ElfLoadResult load_elf(const char *elf_file)
   if (ehdr.e_shstrndx != SHN_UNDEF)
   {
     Assert(ehdr.e_shstrndx < ehdr.e_shnum, "Invalid section name table index in %s", elf_file);
+    // 加载节名字符串表
     char *shstrtab = load_string_table(fp, &shdr[ehdr.e_shstrndx], "section name string table");
 
     for (int i = 0; i < ehdr.e_shnum; i++)
@@ -195,14 +200,18 @@ ElfLoadResult load_elf(const char *elf_file)
       }
     }
 
-    free(shstrtab);
+    free(shstrtab); // 释放节名字符串表
   }
 
-  free(shdr);
+  free(shdr); // 释放节头表
   fclose(fp);
   return result;
 }
-
+/**
+ * 加载ELF文件中的函数符号
+ * @param elf_file ELF文件名
+ * @return 加载的函数数量
+ */
 int load_elf_symbols(const char *elf_file)
 {
   if (elf_file == NULL)
@@ -218,10 +227,13 @@ int load_elf_symbols(const char *elf_file)
   check_elf_header(&ehdr, elf_file);
 
   TraceElfShdr *shdr = load_section_headers(fp, &ehdr, elf_file);
+
+  // 在加载新符号之前，先释放之前加载的符号信息
   free(func_symbols);
   func_symbols = NULL;
   nr_func_symbols = 0;
 
+  // 遍历所有节头，寻找符号表节（SHT_SYMTAB或SHT_DYNSYM）
   for (int i = 0; i < ehdr.e_shnum; i++)
   {
     if (shdr[i].sh_type != SHT_SYMTAB && shdr[i].sh_type != SHT_DYNSYM)
@@ -231,6 +243,7 @@ int load_elf_symbols(const char *elf_file)
 
     Assert(shdr[i].sh_link < ehdr.e_shnum, "Invalid string table link in %s", elf_file);
 
+    // 加载字符串表
     char *strtab = load_string_table(fp, &shdr[shdr[i].sh_link], "symbol string table");
     size_t sym_count = shdr[i].sh_size / sizeof(TraceElfSym);
     TraceElfSym *symtab = malloc(shdr[i].sh_size);
@@ -250,11 +263,11 @@ int load_elf_symbols(const char *elf_file)
       {
         continue;
       }
-
+      // 扩展符号表数组
       FuncSymbol *new_symbols = realloc(func_symbols, (nr_func_symbols + 1) * sizeof(FuncSymbol));
       Assert(new_symbols != NULL, "No memory for function symbols of %s", elf_file);
       func_symbols = new_symbols;
-
+      // 记录函数信息
       func_symbols[nr_func_symbols].start = (vaddr_t)sym->st_value;
       func_symbols[nr_func_symbols].end = (vaddr_t)(sym->st_value + (sym->st_size == 0 ? 1 : sym->st_size));
       strncpy(func_symbols[nr_func_symbols].name, name, sizeof(func_symbols[nr_func_symbols].name) - 1);
@@ -271,7 +284,7 @@ int load_elf_symbols(const char *elf_file)
   return nr_func_symbols;
 }
 
-static const FuncSymbol *find_func_by_addr(vaddr_t addr)
+static const FuncSymbol *find_func_by_addr(vaddr_t addr) // 根据地址查找对应的函数符号，如果找到则返回指向该符号的指针，否则返回NULL
 {
   for (int i = 0; i < nr_func_symbols; i++)
   {
@@ -283,7 +296,7 @@ static const FuncSymbol *find_func_by_addr(vaddr_t addr)
   return NULL;
 }
 
-void trace_log_func(const char *func_name, vaddr_t func_addr, bool is_entry)
+void trace_log_func(const char *func_name, vaddr_t func_addr, bool is_entry) // 记录函数调用和返回日志，包括函数名称、地址和调用/返回标志
 {
 #ifdef CONFIG_TRACE
   int indent_depth = is_entry ? ftrace_depth : (ftrace_depth > 0 ? ftrace_depth - 1 : 0);
@@ -325,7 +338,7 @@ static inline int32_t sign_extend_12(uint32_t imm)
 }
 #endif
 
-void trace_func_call_ret(Decode *s)
+void trace_func_call_ret(Decode *s) // 分析指令s，判断是否为函数调用或返回指令，并记录相应的日志信息
 {
 #ifdef CONFIG_ISA_riscv
   uint32_t inst = s->isa.inst;

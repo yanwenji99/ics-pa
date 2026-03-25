@@ -32,6 +32,8 @@ int vsnprintf_internal(char *out, size_t n, const char *fmt, va_list ap)
 {
   if (n == 0)
     return 0;
+  va_list args;
+  va_copy(args, ap); // 函数参数会退化成指针，所以这里对参数 ap 再取地址就变成了二级指针
   p_buf buf = {
       .buffer = out,
       .size = n,
@@ -45,8 +47,9 @@ int vsnprintf_internal(char *out, size_t n, const char *fmt, va_list ap)
       fmt++;
       continue;
     }
-    fmt = parse_format(&buf, fmt, &ap); // 解析格式字符串
+    fmt = parse_format(&buf, fmt, &args); // 解析格式字符串
   }
+  va_end(args);
   if (buf.pos < buf.size)
   {
     out[buf.pos] = '\0';
@@ -72,20 +75,28 @@ void format_int(p_buf *buf, int value)
   // 将整数转换为字符串，并写入缓冲区
   char temp[12];
   int pos = 0;
+  unsigned int magnitude = 0;
+
   if (value < 0)
   {
     write_char(buf, '-');
-    value = -value;
+    // 避免 INT_MIN 取负溢出：先加一再取负，再补回 1
+    magnitude = (unsigned int)(-(value + 1)) + 1;
   }
-  else if (value == 0)
+  else
+  {
+    magnitude = (unsigned int)value;
+  }
+
+  if (magnitude == 0)
   {
     write_char(buf, '0');
     return;
   }
-  while (value > 0)
+  while (magnitude > 0)
   {
-    temp[pos++] = (value % 10) + '0';
-    value /= 10;
+    temp[pos++] = (magnitude % 10) + '0';
+    magnitude /= 10;
   }
   for (int i = pos - 1; i >= 0; i--)
   {
@@ -124,7 +135,18 @@ const char *parse_format(p_buf *buf, const char *fmt, va_list *ap)
 
 int printf(const char *fmt, ...)
 {
-  panic("Not implemented");
+  char out[1024];
+  va_list args;
+  va_start(args, fmt);
+  int result = vsnprintf(out, sizeof(out), fmt, args);
+  va_end(args);
+
+  for (size_t i = 0; out[i] != '\0'; i++)
+  {
+    putch(out[i]);
+  }
+
+  return result;
 }
 
 int vsprintf(char *out, const char *fmt, va_list ap)
@@ -143,7 +165,11 @@ int sprintf(char *out, const char *fmt, ...)
 
 int snprintf(char *out, size_t n, const char *fmt, ...)
 {
-  panic("Not implemented");
+  va_list args;
+  va_start(args, fmt);
+  int result = vsnprintf(out, n, fmt, args);
+  va_end(args);
+  return result;
 }
 
 int vsnprintf(char *out, size_t n, const char *fmt, va_list ap)

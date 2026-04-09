@@ -199,15 +199,15 @@ static int decode_exec(Decode *s)
           if (ssrc2 == 0) R(rd) = (word_t)-1;
           else if (ssrc1 == (sword_t)0x80000000u && ssrc2 == -1) R(rd) = (word_t)ssrc1;
           else R(rd) = (word_t)(ssrc1 / ssrc2););
-    INSTPAT("0000001 ????? ????? 101 ????? 01100 11", divu, R, R(rd) = src2 == 0 ? (word_t)-1 : src1 / src2;);
-    INSTPAT("0000001 ????? ????? 110 ????? 01100 11", rem, R,
-      sword_t ssrc1 = (sword_t)src1, ssrc2 = (sword_t)src2;
-      if (ssrc2 == 0) R(rd) = src1;
-      else if (ssrc1 == (sword_t)0x80000000u && ssrc2 == -1) R(rd) = 0;
-      else R(rd) = (word_t)(ssrc1 % ssrc2););
-    INSTPAT("0000001 ????? ????? 111 ????? 01100 11", remu, R, R(rd) = src2 == 0 ? src1 : src1 % src2;);
+  INSTPAT("0000001 ????? ????? 101 ????? 01100 11", divu, R, R(rd) = src2 == 0 ? (word_t)-1 : src1 / src2;);
+  INSTPAT("0000001 ????? ????? 110 ????? 01100 11", rem, R,
+          sword_t ssrc1 = (sword_t)src1, ssrc2 = (sword_t)src2;
+          if (ssrc2 == 0) R(rd) = src1;
+          else if (ssrc1 == (sword_t)0x80000000u && ssrc2 == -1) R(rd) = 0;
+          else R(rd) = (word_t)(ssrc1 % ssrc2););
+  INSTPAT("0000001 ????? ????? 111 ????? 01100 11", remu, R, R(rd) = src2 == 0 ? src1 : src1 % src2;);
 
-    INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak, N, NEMUTRAP(s->pc, R(10))); // R(10) is $a0
+  INSTPAT("0000000 00001 00000 000 00000 11100 11", ebreak, N, NEMUTRAP(s->pc, R(10))); // R(10) is $a0
   INSTPAT("??????? ????? ????? ??? ????? ????? ??", inv, N, INV(s->pc));
   INSTPAT_END();
 

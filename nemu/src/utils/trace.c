@@ -7,6 +7,7 @@
 
 #define RINGBUFFER_LEN 16
 
+#ifdef CONFIG_ITRACE
 typedef struct
 {
   char logbuf[128];
@@ -20,6 +21,7 @@ typedef struct
 } TraceRingBuffer;
 
 static TraceRingBuffer iringbuf = {};
+#endif
 
 #ifdef CONFIG_ISA64
 typedef Elf64_Ehdr TraceElfEhdr;
@@ -270,8 +272,7 @@ int load_elf_symbols(const char *elf_file)
       // 记录函数信息
       func_symbols[nr_func_symbols].start = (vaddr_t)sym->st_value;
       func_symbols[nr_func_symbols].end = (vaddr_t)(sym->st_value + (sym->st_size == 0 ? 1 : sym->st_size));
-      strncpy(func_symbols[nr_func_symbols].name, name, sizeof(func_symbols[nr_func_symbols].name) - 1);
-      func_symbols[nr_func_symbols].name[sizeof(func_symbols[nr_func_symbols].name) - 1] = '\0';
+      snprintf(func_symbols[nr_func_symbols].name, sizeof(func_symbols[nr_func_symbols].name), "%s", name);
       nr_func_symbols++;
     }
 
@@ -356,8 +357,7 @@ void trace_func_call_ret(Decode *s) // 分析指令s，判断是否为函数调�
       if (ftrace_top < FTRACE_MAX_DEPTH)
       {
         ftrace_stack[ftrace_top].ret_addr = s->snpc;
-        strncpy(ftrace_stack[ftrace_top].name, name, sizeof(ftrace_stack[ftrace_top].name) - 1);
-        ftrace_stack[ftrace_top].name[sizeof(ftrace_stack[ftrace_top].name) - 1] = '\0';
+        snprintf(ftrace_stack[ftrace_top].name, sizeof(ftrace_stack[ftrace_top].name), "%s", name);
         ftrace_top++;
       }
     }
@@ -384,8 +384,7 @@ void trace_func_call_ret(Decode *s) // 分析指令s，判断是否为函数调�
       if (ftrace_top < FTRACE_MAX_DEPTH)
       {
         ftrace_stack[ftrace_top].ret_addr = s->snpc;
-        strncpy(ftrace_stack[ftrace_top].name, name, sizeof(ftrace_stack[ftrace_top].name) - 1);
-        ftrace_stack[ftrace_top].name[sizeof(ftrace_stack[ftrace_top].name) - 1] = '\0';
+        snprintf(ftrace_stack[ftrace_top].name, sizeof(ftrace_stack[ftrace_top].name), "%s", name);
         ftrace_top++;
       }
       return;
@@ -468,8 +467,7 @@ void trace_ringbuf_push(Decode *s)
 #ifdef CONFIG_ITRACE
   TraceRingBufferEntry *entry = &iringbuf.buf[iringbuf.next];
   entry->valid = true;
-  strncpy(entry->logbuf, s->logbuf, sizeof(entry->logbuf) - 1);
-  entry->logbuf[sizeof(entry->logbuf) - 1] = '\0';
+  snprintf(entry->logbuf, sizeof(entry->logbuf), "%s", s->logbuf);
   iringbuf.next = (iringbuf.next + 1) % RINGBUFFER_LEN;
 #else
   (void)s;

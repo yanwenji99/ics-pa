@@ -16,6 +16,7 @@ typedef struct __printf_buffer
 const char *parse_format(p_buf *buf, const char *fmt, va_list *ap);
 void write_char(p_buf *buf, char c);
 void format_int(p_buf *buf, int value);
+void format_int_with_width(p_buf *buf, int value, int width, int zero_pad);
 void format_str(p_buf *buf, const char *str);
 
 void out_buffer(p_buf *buf)
@@ -104,6 +105,67 @@ void format_int(p_buf *buf, int value)
   }
 }
 
+void format_int_with_width(p_buf *buf, int value, int width, int zero_pad)
+{
+  char temp[12];
+  int digits = 0;
+  int is_negative = (value < 0);
+  unsigned int magnitude = 0;
+
+  if (is_negative)
+  {
+    // Avoid overflow when value is INT_MIN.
+    magnitude = (unsigned int)(-(value + 1)) + 1;
+  }
+  else
+  {
+    magnitude = (unsigned int)value;
+  }
+
+  if (magnitude == 0)
+  {
+    temp[digits++] = '0';
+  }
+  else
+  {
+    while (magnitude > 0)
+    {
+      temp[digits++] = (magnitude % 10) + '0';
+      magnitude /= 10;
+    }
+  }
+
+  int sign_len = is_negative ? 1 : 0;
+  int raw_len = sign_len + digits;
+  int pad_len = (width > raw_len) ? (width - raw_len) : 0;
+  char pad_ch = zero_pad ? '0' : ' ';
+
+  if (is_negative && zero_pad)
+  {
+    write_char(buf, '-');
+    for (int i = 0; i < pad_len; i++)
+    {
+      write_char(buf, '0');
+    }
+  }
+  else
+  {
+    for (int i = 0; i < pad_len; i++)
+    {
+      write_char(buf, pad_ch);
+    }
+    if (is_negative)
+    {
+      write_char(buf, '-');
+    }
+  }
+
+  for (int i = digits - 1; i >= 0; i--)
+  {
+    write_char(buf, temp[i]);
+  }
+}
+
 void format_str(p_buf *buf, const char *str)
 {
   // 将字符串写入缓冲区
@@ -119,14 +181,43 @@ const char *parse_format(p_buf *buf, const char *fmt, va_list *ap)
   // 根据格式说明符从 va_list 中获取对应的参数，并调用 write_char 写入缓冲区
   fmt++; // 跳过 '%' 字符
 
+  int zero_pad = 0;
+  int width = 0;
+
+  if (*fmt == '0')
+  {
+    zero_pad = 1;
+    fmt++;
+  }
+
+  while (*fmt >= '0' && *fmt <= '9')
+  {
+    width = width * 10 + (*fmt - '0');
+    fmt++;
+  }
+
   // 处理格式说明符
   switch (*fmt)
   {
   case 'd':
-    format_int(buf, va_arg(*ap, int));
+    if (width > 0)
+    {
+      format_int_with_width(buf, va_arg(*ap, int), width, zero_pad);
+    }
+    else
+    {
+      format_int(buf, va_arg(*ap, int));
+    }
     break;
   case 's':
     format_str(buf, va_arg(*ap, const char *));
+    break;
+  default:
+    write_char(buf, '%');
+    if (*fmt != '\0')
+    {
+      write_char(buf, *fmt);
+    }
     break;
   }
 

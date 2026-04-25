@@ -510,3 +510,25 @@ void trace_log_mem(char type, paddr_t addr, int len, word_t data)
   (void)data;
 #endif
 }
+
+void trace_log_device(const char *name, char type, paddr_t addr, int len, word_t data)
+{ // 记录设备访问日志，包括设备名、访问类型、地址、长度和数据
+#ifdef CONFIG_DTRACE
+  char logbuf[160];
+  char *p = logbuf;
+
+  p += snprintf(p, sizeof(logbuf), "dtrace: pc=" FMT_WORD, cpu.pc);
+  p += snprintf(p, logbuf + sizeof(logbuf) - p, " name=%s", name);
+  p += snprintf(p, logbuf + sizeof(logbuf) - p, " addr=" FMT_PADDR, addr);
+  p += snprintf(p, logbuf + sizeof(logbuf) - p, " len=%d", len);
+  p += snprintf(p, logbuf + sizeof(logbuf) - p, " type=%c", type);
+  snprintf(p, logbuf + sizeof(logbuf) - p, " data=" FMT_WORD, data);
+  log_write("%s\n", logbuf);
+#else
+  (void)name;
+  (void)type;
+  (void)addr;
+  (void)len;
+  (void)data;
+#endif
+}

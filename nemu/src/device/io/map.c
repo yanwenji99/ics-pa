@@ -17,6 +17,7 @@
 #include <memory/host.h>
 #include <memory/vaddr.h>
 #include <device/map.h>
+#include <trace.h>
 
 #define IO_SPACE_MAX (32 * 1024 * 1024)
 
@@ -58,6 +59,7 @@ word_t map_read(paddr_t addr, int len, IOMap *map) {
   paddr_t offset = addr - map->low;
   invoke_callback(map->callback, offset, len, false); // prepare data to read
   word_t ret = host_read(map->space + offset, len);
+  trace_log_device(map->name, 'R', addr, len, ret);
   return ret;
 }
 
@@ -65,6 +67,7 @@ void map_write(paddr_t addr, int len, word_t data, IOMap *map) {
   assert(len >= 1 && len <= 8);
   check_bound(map, addr);
   paddr_t offset = addr - map->low;
+  trace_log_device(map->name, 'W', addr, len, data);
   host_write(map->space + offset, len, data);
   invoke_callback(map->callback, offset, len, true);
 }

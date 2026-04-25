@@ -33,5 +33,8 @@ void trace_ringbuf_print(void); // 打印循环缓冲区中的指令信息
 // mtrace
 void trace_log_mem(char type, paddr_t addr, int len, word_t data); // 记录内存访问日志，包括访问类型、地址、长度和数据
 
+// dtrace
+void trace_log_device(const char *name, char type, paddr_t addr, int len, word_t data); // 记录设备访问日志，包括设备名、访问类型、地址、长度和数据
+
 
 #endif
